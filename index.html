@@ -225,22 +225,55 @@ let tickT=0;function tick(){const s=S.steps&&S.steps[S.i];if(!s||s.kind!=='walk'
   if(Date.now()-tickT>500){tickT=Date.now();drawRoute()}
   if(done>=Math.round(need)&&!s._warned){s._warned=1;speak('Deberías estar llegando. Confirma con Hecho.')}}
 // ---------- search
-function matches(q){q=q.trim().toLowerCase();if(q.length<2)return[];const terms=[q];for(const[k,v]of SYN)if(q.includes(k))terms.push(v.toLowerCase());
-  return ROOMS.filter(r=>{const t=(r.n+' '+gloss(r.n)).toLowerCase();return terms.some(x=>t.includes(x))}).slice(0,25)}
-function resHTML(list){return list.map((r,i)=>`<button class="res" data-i="${i}"><b>${r.n}</b><small>${ENG.DECKNAME[r.d]} · cuad. ~${Math.round(r.fr)} · ${sideTxt(r.dy)}${gloss(r.n)?' · '+gloss(r.n):''}</small></button>`).join('')}
+const ABBR=[[["msb","esb","lc","sb","ups","cuadro","cuadros","switchboard","main switchboard","cuadro principal","cuadro de emergencia","load centre","load center","centro de carga"],"SWITCHBOARDS"],
+ [["dg","dgs","gen","generador","generadores","grupo","grupos","diesel generator"],"DIESEL GENERATOR"],
+ [["me","mm","motor","motores","motor principal","maquinas","cámara de máquinas","camara de maquinas","sala de maquinas","engine"],"ENGINE ROOM"],
+ [["mcr","pcr","ipms","sala de control","control de plataforma","control de maquinas","cmc"],"PLATFORM CONTROL"],
+ [["cic","cco","combate"],"C.I.C."],[["flyco","vuelo","control de vuelo"],"FLIGHT CONTROL"],
+ [["dcs","sca","averias","averías","control de averias","control de averías"],"DAMAGE CONTROL"],
+ [["spc","shore","tierra","toma de tierra","corriente de tierra"],"SHORE CONNECTION"],
+ [["eer","electronica","electrónica","equipos electronicos","equipos electrónicos"],"ELECTRONIC EQUIPMENT"],
+ [["aux","auxiliar","maquinaria auxiliar"],"AUXILIARY"],[["servo","servomotor","timon","timón","gobierno"],"STEERING"],
+ [["puente","bridge","puente de gobierno"],"NAVIGATION BRIDGE"],[["hvac","ventilacion","ventilación","ventiladores"],"FAN ROOM"],
+ [["taller","talleres"],"WORKSHOP"],[["cocina"],"GALLEY"],[["comedor","mess"],"MESSROOM"],[["camarote","camarotes"],"CABIN"],
+ [["enfermeria","enfermería"],"INFIRMARY"],[["lavanderia","lavandería"],"LAUNDRY"],[["gambuza","viveres","víveres"],"PROVISIONS"],
+ [["pañol","panol"],"STOREROOM"],[["giro","giroscopica","giroscópica"],"GYRO"],[["radio"],"RADIO"],[["redes"],"NETWORKS"],
+ [["agua nebulizada","watermist"],"WATERMIST"],[["toma de mar","tomas de mar"],"SEA CHEST"],[["oficina"],"OFFICE"]];
+const norm=s=>s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9ñ\. ]+/g,' ').replace(/\s+/g,' ').trim();
+let ALIAS={};try{ALIAS=JSON.parse(localStorage.getItem('avt-alias')||'{}')}catch(e){}
+const saveAlias=()=>{try{localStorage.setItem('avt-alias',JSON.stringify(ALIAS))}catch(e){}};
+let lastMiss='';
+function matches(q){const raw=q.trim();q=norm(raw);if(q.length<2)return[];const words=q.split(' ');
+  // user aliases first
+  const own=[];for(const[a,ref]of Object.entries(ALIAS)){if(norm(a).startsWith(q)||q===norm(a)){const r=ROOMS.find(x=>x.ref===ref);if(r&&!own.includes(r))own.push(Object.assign({},r,{alias:a}))}}
+  const terms=[q];
+  for(const[keys,v]of ABBR)for(const k of keys){const nk=norm(k);if(words.includes(nk)||q===nk||(nk.length>3&&q.includes(nk))||(q.length>=3&&nk.startsWith(q)))terms.push(v.toLowerCase())}
+  const base=q.replace(/[\s\-]*\d+$/,'').trim();if(base&&base!==q)for(const[keys,v]of ABBR)if(keys.map(norm).includes(base))terms.push(v.toLowerCase());
+  if(terms.length>1&&q.length<=4)terms.shift();
+  const L=ROOMS.filter(r=>{const t=norm(r.n+' '+gloss(r.n));return terms.some(x=>t.includes(norm(x)))}).filter(r=>!own.some(o=>o.ref===r.ref)).sort((a,b)=>a.n.localeCompare(b.n,'es',{numeric:true}));
+  const res=own.concat(L).slice(0,25);lastMiss=(own.length?'':raw);return res}
+function resHTML(list){return list.map((r,i)=>`<button class="res" data-i="${i}"><b>${r.alias?'★ '+r.alias+' → ':''}${r.n}</b><small>${ENG.DECKNAME[r.d]} · cuad. ~${Math.round(r.fr)} · ${sideTxt(r.dy)}${gloss(r.n)?' · '+gloss(r.n):''}</small></button>`).join('')}
+function aliasOffer(r){if(!lastMiss||norm(lastMiss)===norm(r.n)||r.alias)return'';const a=lastMiss;
+  return`<div class="warn" id="aof">¿Guardar <b>«${a.replace(/</g,'')}»</b> como tu nombre para <b>${r.n}</b>? Así lo encontrarás escribiéndolo. <div class="row"><button class="btn pri" id="aok">Guardar</button><button class="btn" id="ano">No</button></div></div>`}
+function aliasesHTML(){const k=Object.keys(ALIAS);if(!k.length)return'';return`<details><summary>Mis nombres (${k.length})</summary>${k.map(a=>{const r=ROOMS.find(x=>x.ref===ALIAS[a]);return`<div class="row" style="align-items:center;justify-content:space-between"><span class="small"><b>${a}</b> → ${r?r.n:'?'}</span><button class="btn" data-del="${encodeURIComponent(a)}">Borrar</button></div>`}).join('')}</details>`}
 // ---------- phases
 function planUI(){S.phase='plan';
   sheet.innerHTML=`<h2>Planifica tu ruta</h2>
   <div class="field"><label for="qf">Estoy en</label><input id="qf" placeholder="Local donde estás, o toca el plano" value="${S.from?S.from.n:''}" class="${S.from?'ok':''}"></div>
-  <div class="field"><label for="qt">Voy a</label><input id="qt" placeholder="Local de destino" value="${S.to?S.to.n:''}" class="${S.to?'ok':''}"></div>
+  <div class="field"><label for="qt">Voy a</label><input id="qt" placeholder="Destino: MSB, cuadro, puente, DG…" value="${S.to?S.to.n:''}" class="${S.to?'ok':''}"></div>
   <div id="list"></div>
   <div class="row"><button class="btn go" id="start" ${S.from&&S.to?'':'disabled'}>Empezar navegación</button></div>
   <p class="hint">Para marcar tu posición sin buscar: elige la cubierta en la barra lateral, amplía y toca un punto del pasillo o del local donde estás. Las escalas aparecen como ▲ sube / ▼ baja.</p>
-  ${notesHTML()}`;
+  ${aliasesHTML()}${notesHTML()}`;
   const bind=(id,key)=>{const inp=document.getElementById(id);inp.oninput=()=>{const L=matches(inp.value);const box=document.getElementById('list');box.innerHTML=resHTML(L);
-      box.querySelectorAll('.res').forEach(b=>b.onclick=()=>{const r=L[+b.dataset.i];S[key]={nid:r.nid,n:r.n,d:r.d,ref:r.ref};planUI();
+      if(!L.length&&inp.value.trim().length>=2)box.innerHTML=`<p class="hint">No encuentro «${inp.value.replace(/</g,'')}» en el plano. Escribe el nombre del local tal como está rotulado (p. ej. SWITCHBOARDS, GENERATOR, GALLEY) o en español (cuadro, generador, cocina). Al elegirlo, podrás guardar «${inp.value.replace(/</g,'')}» como tu nombre para ese local.</p>`;
+      if(!L.length)lastMiss=inp.value.trim()||lastMiss;
+      box.querySelectorAll('.res').forEach(b=>b.onclick=()=>{const r=L[+b.dataset.i];const miss=lastMiss;S[key]={nid:r.nid,n:r.n,d:r.d,ref:r.ref};planUI();
+        if(miss&&!r.alias&&!norm(r.n+' '+gloss(r.n)).includes(norm(miss))){lastMiss=miss;document.getElementById('list').innerHTML=aliasOffer(r);
+          const ok=document.getElementById('aok');if(ok){ok.onclick=()=>{ALIAS[miss]=r.ref;saveAlias();lastMiss='';planUI()};document.getElementById('ano').onclick=()=>{lastMiss='';document.getElementById('list').innerHTML=''}}}
         const n=G.nodes[r.nid];show(r.d==='doublebottom'?'doublebottom':n.d,true);const [X,Y]=xy(r.d,r.fr,r.dy);centerOn(X,Y,.5,true);drawRoute()})}};
   bind('qf','from');bind('qt','to');
+  sheet.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{delete ALIAS[decodeURIComponent(b.dataset.del)];saveAlias();planUI()});
   document.getElementById('start').onclick=startNav;bindNotes()}
 function startNav(){const P=ENG.path(G,S.from.nid,S.to.nid);if(!P){sheet.insertAdjacentHTML('afterbegin','<div class="warn">No encuentro una ruta entre esos dos puntos con el plano.</div>');return}
   S.steps=ENG.steps(G,P,S.to.n);if(S.to.d==='doublebottom'){S.steps[S.steps.length-1].db=1}S.i=0;S.facing=null;S.phase='orient';S.needOrient=true;orientUI(true)}
@@ -292,7 +325,7 @@ async function unlock(pw,remember){const buf=new Uint8Array(await (await fetch('
   const base=await crypto.subtle.importKey('raw',new TextEncoder().encode(pw),'PBKDF2',false,['deriveKey']);
   const key=await crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:250000,hash:'SHA-256'},base,{name:'AES-GCM',length:256},false,['decrypt']);
   const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv},key,ct);const o=JSON.parse(new TextDecoder().decode(pt));
-  if(remember)LS('avt-pw',pw);document.getElementById('lock').remove();document.querySelector('main').style.display='';document.getElementById("sheet").style.display="";boot(o.DECKS,o.G)}
+  if(remember)LS('avt-pw',pw);document.getElementById('lock').remove();document.querySelector('main').style.display='';document.getElementById('sheet').style.display='';boot(o.DECKS,o.G)}
 (function(){const f=document.getElementById('lockf'),m=document.getElementById('lockmsg');
   if(!window.crypto||!crypto.subtle){m.textContent='Abre la app desde su dirección https o desde el icono de la pantalla de inicio.';return}
   f.onsubmit=async e=>{e.preventDefault();m.textContent='Abriendo planos…';try{await unlock(document.getElementById('pw').value.trim(),document.getElementById('rem').checked)}catch(err){m.textContent='Contraseña incorrecta, o la app aún no está guardada en el móvil (ábrela una vez con internet).'}};
