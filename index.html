@@ -85,10 +85,12 @@ h2{font-size:1.05rem;margin:.1rem 0 .4rem}
 .warn{border-left:4px solid var(--hi);background:var(--panel);padding:.4rem .6rem;font-size:.84rem;line-height:1.35;margin:.4rem 0}
 details{margin-top:.6rem;font-size:.85rem}summary{cursor:pointer;color:var(--ink2)}
 textarea{width:100%;font:inherit;font-size:.85rem;min-height:5rem;background:var(--paper);color:var(--ink);border:1px solid var(--line);border-radius:4px}
+#alertb{position:fixed;top:calc(env(safe-area-inset-top,0px) + 46px);left:10px;right:10px;z-index:9000;padding:.75rem .9rem;border-radius:10px;font-weight:700;font-size:1.05rem;display:none;box-shadow:0 4px 14px rgba(0,0,0,.35)}
+.ab-ok,.ab-arr{background:#1e8e3e;color:#fff}.ab-warn{background:#f9ab00;color:#202124}.ab-bad{background:#d93025;color:#fff;font-size:1.2rem}
 </style>
 </head>
 <body>
-<header><h1>AVANTE 2200 · Navegador <small style="font-weight:400;font-size:.7rem">v2.1</small></h1><span id="dname"></span></header>
+<header><h1>AVANTE 2200 · Navegador <small style="font-weight:400;font-size:.7rem">v3</small></h1><span id="dname"></span></header>
 <div id="lock" style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:24px;gap:12px;max-width:420px;margin:0 auto;width:100%">
 <img src="icon-192.png" alt="" width="72" height="72" style="border-radius:16px">
 <h2 style="font-size:1.3rem;margin:0">Navegador a bordo</h2>
@@ -197,12 +199,15 @@ function show(k,noFit){cur=DK[k];PLANKEYS.forEach(x=>DK[x].btn.setAttribute('ari
 function pin(cls,X,Y){const e=document.createElement('div');e.className='pin '+cls;e.style.left=X+'px';e.style.top=Y+'px';e.innerHTML='<span></span>';stage.appendChild(e);return e}
 function drawRoute(){stage.querySelectorAll('.me,.dst').forEach(e=>e.remove());const svg=document.getElementById('rsvg');if(!svg)return;svg.innerHTML='';
   DECKS.forEach(d=>d.btn&&d.btn.classList.remove('rt'));
-  if(S.steps){const k=cur.key;const used=new Set();
+  if(S.phase==='choose'&&S.options){const k=cur.key;[...S.options].reverse().forEach(r=>{r.steps.forEach(s=>{s.pts.forEach(n=>DK[G.nodes[n].d]&&DK[G.nodes[n].d].btn&&DK[G.nodes[n].d].btn.classList.add('rt'));if(s.kind!=='walk'||G.nodes[s.pts[0]].d!==k)return;
+      const pl=document.createElementNS('http://www.w3.org/2000/svg','polyline');pl.setAttribute('points',s.pts.map(n=>xy(k,G.nodes[n].fr,G.nodes[n].dy).join(',')).join(' '));pl.setAttribute('fill','none');
+      pl.setAttribute('stroke',r.alt?'#9aa0a6':'#1a73e8');pl.setAttribute('stroke-width',r.alt?9:12);pl.setAttribute('stroke-linecap','round');pl.setAttribute('stroke-linejoin','round');if(r.alt)pl.setAttribute('stroke-dasharray','22 18');svg.appendChild(pl)})})}
+  if(S.steps&&S.phase!=='choose'){const k=cur.key;const used=new Set();
     S.steps.forEach((s,i)=>{s.pts.forEach(n=>used.add(G.nodes[n].d));if(s.kind!=='walk')return;if(G.nodes[s.pts[0]].d!==k)return;
       const P=s.pts.map(n=>xy(k,G.nodes[n].fr,G.nodes[n].dy).join(',')).join(' ');
       const pl=document.createElementNS('http://www.w3.org/2000/svg','polyline');pl.setAttribute('points',P);pl.setAttribute('fill','none');
       pl.setAttribute('stroke','var(--route)');pl.setAttribute('stroke-linejoin','round');pl.setAttribute('stroke-linecap','round');
-      pl.setAttribute('stroke-width',(i===S.i?14:8)/1);pl.setAttribute('opacity',i<S.i?.3:i===S.i?1:.7);svg.appendChild(pl)});
+      pl.setAttribute('stroke-width',(i===S.i?14:8)/1);if(S.alt)pl.setAttribute('stroke-dasharray','22 18');pl.setAttribute('opacity',i<S.i?.3:i===S.i?1:.7);svg.appendChild(pl)});
     used.forEach(d=>DK[d]&&DK[d].btn&&DK[d].btn.classList.add('rt'))}
   if(S.to){const n=G.nodes[S.to.nid];if(n&&n.d===cur.key){const [X,Y]=xy(n.d,n.fr,n.dy);pin('dst',X,Y)}}
   const me=mePos();if(me&&me.d===cur.key){const [X,Y]=xy(me.d,me.fr,me.dy);pin('me',X,Y)}}
@@ -292,7 +297,7 @@ function aliasesHTML(){const k=Object.keys(ALIAS);if(!k.length)return'';return`<
 // ---------- phases
 function planUI(){S.phase='plan';
   sheet.innerHTML=`<div class="tabs"><button class="btn pri" id="tabR">Ruta</button><button class="btn" id="tabE">Equipos</button></div>
-  <div class="field"><label for="qf">Estoy en</label><input id="qf" placeholder="Local, código de la placa (2-93-00-E) o toca el plano" value="${S.from?S.from.n:''}" class="${S.from?'ok':''}"></div>
+  <div class="row" style="margin-top:0"><button class="btn pri" id="voice" style="flex:1">🎤 Dímelo en español</button></div><div class="field"><label for="qf">Estoy en</label><input id="qf" placeholder="Local, código de la placa (2-93-00-E) o toca el plano" value="${S.from?S.from.n:''}" class="${S.from?'ok':''}"></div>
   <div class="field"><label for="qt">Voy a</label><input id="qt" placeholder="Destino: MSB, cuadro, puente, DG…" value="${S.to?S.to.n:''}" class="${S.to?'ok':''}"></div>
   <div id="list"></div>
   <div class="row"><button class="btn go" id="start" ${S.from&&S.to?'':'disabled'}>Empezar navegación</button></div>
@@ -307,6 +312,7 @@ function planUI(){S.phase='plan';
         const n=G.nodes[r.nid];show(r.d==='doublebottom'?'doublebottom':n.d,true);const [X,Y]=xy(r.d,r.fr,r.dy);centerOn(X,Y,.5,true);drawRoute()})}};
   bind('qf','from');bind('qt','to');
   document.getElementById('tabE').onclick=()=>eqUI();
+  document.getElementById('voice').onclick=()=>voiceUI();
   sheet.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{delete ALIAS[decodeURIComponent(b.dataset.del)];saveAlias();planUI()});
   document.getElementById('start').onclick=startNav;bindNotes()}
 let EQG=null;
@@ -357,8 +363,144 @@ function annotate(steps,destName,fromName){const ex=[clean(fromName),clean(destN
       if(s.exit){const o=nearDoor(d,a.fr,a.dy,4.5);if(o)lm.exitDoor=o.id}
       if(i===lastWalk){lm.last=true;lm.dest=clean(destName)}}
     else if(s.kind==='lad'){lm.near=nearLM(d,a.fr,a.dy,4)}});return steps}
-function startNav(){const P=ENG.path(G,S.from.nid,S.to.nid);if(!P){sheet.insertAdjacentHTML('afterbegin','<div class="warn">No encuentro una ruta entre esos dos puntos con el plano.</div>');return}
-  S.steps=annotate(ENG.steps(G,P,S.to.n),S.to.n,S.from&&S.from.n);if(S.to.d==='doublebottom'){S.steps[S.steps.length-1].db=1}S.i=0;S.facing=null;S.phase='orient';S.needOrient=true;orientUI(true)}
+// ---------- Parte 3: rutas, paradas, alertas, voz
+const WALK=0.8,TLAD=15,TWT=10;
+function pathW(s,t,wfn){const n=G.nodes.length,d=new Float64Array(n).fill(Infinity),p=new Int32Array(n).fill(-1),pt=new Array(n),done=new Uint8Array(n);d[s]=0;
+  for(;;){let u=-1,m=Infinity;for(let i=0;i<n;i++)if(!done[i]&&d[i]<m){m=d[i];u=i}if(u<0||u===t)break;done[u]=1;
+    for(const[v,c,ty]of G.adj[u]){const w=wfn(u,v,c,ty);if(d[u]+w<d[v]){d[v]=d[u]+w;p[v]=u;pt[v]=ty}}}
+  if(d[t]===Infinity)return null;const P=[];for(let v=t;v!==-1;v=p[v])P.unshift({n:v,via:pt[v]||null});return P}
+const ekey=(a,b)=>a<b?a+'-'+b:b+'-'+a;
+function safeW(u,v,c,ty){const N=G.nodes;let w=c;if(N[v].k==='door'&&N[v].wt)w+=8;if(ty==='v')w+=4;return w}
+function routeMetrics(P){const N=G.nodes;let m=0,lad=0,wt=0;for(let i=1;i<P.length;i++){const a=N[P[i-1].n],b=N[P[i].n];if(P[i].via==='v'){lad++;continue}m+=Math.hypot((b.fr-a.fr)*.67,(b.dy-a.dy)*.0529);if(b.k==='door'&&b.wt)wt++}
+  return{m:Math.round(m),lad,wt,sec:Math.round(m/WALK+lad*TLAD+wt*TWT)}}
+function buildStops(steps,destName){const stops=[];steps.forEach((s,i)=>{const lm=s.lm||{};s.stopIdx=[];
+    if(s.kind==='walk'){const names=[];if(lm.door)names.push('Puerta '+lm.door);(lm.via||[]).forEach(v=>names.push(v));if(lm.end&&!lm.last)names.push(lm.end);
+      names.forEach(nm=>{s.stopIdx.push(stops.length);stops.push({name:nm,step:i})})}
+    else if(s.kind==='lad'){s.stopIdx.push(stops.length);stops.push({name:(s.up?'Escala de subida':'Escala de bajada')+(lm.near?' junto a '+lm.near:''),step:i,lad:1})}
+    else if(s.kind==='arrive'){s.stopIdx.push(stops.length);stops.push({name:clean(destName),step:i,dest:1})}});
+  steps.forEach(s=>{s.sec=s.kind==='walk'?s.dist/WALK+((s.lm||{}).door&&/estanca/.test(s.lm.door)?TWT:0):s.kind==='lad'?TLAD:0;const k=s.stopIdx.length||1;s.stopIdx.forEach(j=>stops[j].sec=s.sec/k)});
+  return stops}
+const fmtT=s=>s<60?`${Math.max(5,Math.round(s/5)*5)} s`:`${Math.round(s/60)} min`;
+function makeRoute(P,alt){const steps=annotate(ENG.steps(G,P,S.to.n),S.to.n,S.from&&S.from.n);if(S.to.d==='doublebottom')steps[steps.length-1].db=1;
+  const stops=buildStops(steps,S.to.n);return{P,steps,stops,met:routeMetrics(P),alt}}
+// ---- alertas
+let AC=null;
+function beep(kind){try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();if(AC.state==='suspended')AC.resume();
+  const seq=kind==='ok'?[[880,.12]]:kind==='warn'?[[660,.18],[660,.18]]:kind==='arr'?[[660,.14],[880,.14],[1100,.3]]:[[320,.35],[220,.5],[320,.35]];
+  let t=AC.currentTime+.02;seq.forEach(([f,d])=>{const o=AC.createOscillator(),g=AC.createGain();o.type='sine';o.frequency.value=f;o.connect(g);g.connect(AC.destination);g.gain.setValueAtTime(.3,t);g.gain.exponentialRampToValueAtTime(.001,t+d);o.start(t);o.stop(t+d);t+=d+.07})}catch(e){}}
+function flash(kind,msg,keep){let b=document.getElementById('alertb');if(!b){b=document.createElement('div');b.id='alertb';b.setAttribute('role','alert');document.body.appendChild(b);b.onclick=()=>b.style.display='none'}
+  b.className='ab-'+kind;b.textContent=msg;b.style.display='block';clearTimeout(b._t);if(!keep)b._t=setTimeout(()=>b.style.display='none',kind==='bad'?7000:kind==='warn'?5000:2200);beep(kind)}
+let watchT=null;function watch(sec,name){clearTimeout(watchT);if(!sec)return;watchT=setTimeout(()=>{if(S.phase!=='nav')return;const m=`¿Ves ya ${name}? Si te has pasado, para y comprueba la placa más cercana.`;flash('warn',m);speak(m)},Math.max(25,sec*2+20)*1000)}
+// ---- elegir ruta
+function startNav(){const rec=pathW(S.from.nid,S.to.nid,safeW);if(!rec){sheet.insertAdjacentHTML('afterbegin','<div class="warn">No encuentro una ruta entre esos dos puntos con el plano.</div>');return}
+  const used=new Set();for(let i=1;i<rec.length;i++)used.add(ekey(rec[i-1].n,rec[i].n));
+  const altP=pathW(S.from.nid,S.to.nid,(u,v,c,ty)=>safeW(u,v,c,ty)*(used.has(ekey(u,v))?5:1));
+  const R1=makeRoute(rec,false);S.options=[R1];
+  if(altP){let sh=0;for(let i=1;i<altP.length;i++)if(used.has(ekey(altP[i-1].n,altP[i].n)))sh++;const R2=makeRoute(altP,true);
+    if(sh/Math.max(1,altP.length-1)<0.8&&R2.met.m<=R1.met.m*2.5+40)S.options.push(R2)}
+  chooseUI()}
+function metHTML(r){const m=r.met;return`~${fmtT(m.sec)} · ${m.m} m · ${m.lad} ${m.lad===1?'escala':'escalas'} · ${m.wt} ${m.wt===1?'puerta estanca':'puertas estancas'} · <b>${r.stops.length} paradas</b>`}
+function chooseUI(){S.phase='choose';const n0=G.nodes[S.from.nid];show(n0.d,true);drawRoute();focusMe(true);
+  sheet.innerHTML=`<h2>Elige tu ruta</h2><p class="hint" style="margin-top:0">Desde <b>${clean(S.from.n)}</b> hasta <b>${clean(S.to.n)}</b></p>
+  ${S.options.map((r,i)=>`<button class="res" data-o="${i}" style="border:2px solid ${i?'#9aa0a6':'#1a73e8'};border-radius:8px;margin-bottom:8px;padding:.6rem">
+   <b>${i?'Alternativa':'Recomendada · más corta y segura'}</b><small><svg width="46" height="8" style="vertical-align:middle;margin-right:6px"><line x1="2" y1="4" x2="44" y2="4" stroke="${i?'#9aa0a6':'#1a73e8'}" stroke-width="5" ${i?'stroke-dasharray="7 6"':''} stroke-linecap="round"/></svg>${metHTML(r)}</small></button>`).join('')}
+  ${S.options.length<2?'<p class="hint">No hay otra ruta razonable para este trayecto.</p>':''}
+  <div class="row"><button class="btn" id="cback">Volver</button></div>`;
+  sheet.querySelectorAll('[data-o]').forEach(b=>b.onclick=()=>{const r=S.options[+b.dataset.o];S.steps=r.steps;S.stops=r.stops;S.alt=r.alt;S.i=0;S.si=0;S.facing=null;S.options=null;S.phase='orient';orientUI(true)});
+  document.getElementById('cback').onclick=()=>{S.options=null;S.steps=null;planUI();drawRoute()}}
+// ---- navegación por paradas
+function remSec(){let t=0;for(let j=S.i;j<S.steps.length;j++)t+=S.steps[j].sec||0;return t}
+function navUI(speakIt,sayOverride){S.phase='nav';const s=S.steps[S.i];const p=ENG.phrase(s,S.facing,G);
+  const d=G.nodes[s.pts[0]].d;if(cur.key!==d)show(d,true);drawRoute();focusMe(true);
+  const N=S.stops.length;const pend=s.stopIdx.filter(j=>j>=S.si);const nxt=pend.length?S.stops[pend[0]]:null;
+  const left=N-1-S.si;let extra='';
+  if(s.kind==='arrive'&&s.db)extra='<div class="warn">El destino está en el doble fondo: acceso por registro desde esta plataforma, solo con permiso de trabajo y procedimiento de espacio confinado.</div>';
+  const btn=s.kind==='arrive'?'<button class="btn go" id="fin">Terminar</button>':s.kind==='lad'?`<button class="btn go" id="see">Ya estoy en ${ENG.DECKNAME[s.to].replace(/ \(.*\)/,'')} ✓</button>`:nxt?'<button class="btn go" id="see">La veo ✓</button>':'<button class="btn go" id="see">Hecho ✓</button>';
+  sheet.innerHTML=`<div class="cmd">${arrowSVG(p.arrow)}<div><div class="big">${p.short}</div><div class="sub">${p.sub}</div></div></div>
+  <div class="say">${sayOverride||p.say}</div>
+  ${nxt&&s.kind==='walk'?`<div class="say" style="border-color:#1e8e3e">Próxima parada: <b>${nxt.name}</b> · ~${fmtT(nxt.sec||5)}</div>`:''}${extra}
+  <p class="small" style="margin:.3rem 0"><b>${s.kind==='arrive'?'Has llegado':`Parada ${Math.min(S.si+1,N)} de ${N} · quedan ${left<0?0:left} hasta el destino`}</b> · llegada en ~${fmtT(remSec())}</p>
+  <div class="row">${btn}<button class="btn" id="rep" aria-label="Repetir instrucción">🔊</button><button class="btn" id="chk">Comprobar placa</button></div>
+  <div id="chkbox"></div>
+  <div class="row"><button class="btn" id="lost">Estoy perdido</button><button class="btn" id="back" ${S.i?'':'disabled'}>Atrás</button><button class="btn" id="reo">Reorientar</button><button class="btn" id="fix">Corregir</button></div>
+  <p class="small">Destino: ${S.to.n}${S.alt?' · ruta alternativa':''}</p>`;
+  if(speakIt)speak(sayOverride||p.say);
+  watch(nxt?nxt.sec:s.sec,nxt?nxt.name:'el final de este tramo');
+  const see=document.getElementById('see');if(see)see.onclick=()=>advance(p);
+  const fin=document.getElementById('fin');if(fin)fin.onclick=()=>{clearTimeout(watchT);S.from={nid:S.to.nid,n:S.to.n,d:S.to.d,ref:S.to.ref};S.to=null;S.steps=null;S.stops=null;planUI();drawRoute()};
+  document.getElementById('rep').onclick=()=>speak(sayOverride||p.say);
+  document.getElementById('back').onclick=()=>{S.i=Math.max(0,S.i-1);S.si=S.steps[S.i].stopIdx.length?S.steps[S.i].stopIdx[0]:S.si;S.facing=null;orientUI(false)};
+  document.getElementById('lost').onclick=()=>{clearTimeout(watchT);S.steps=null;S.stops=null;S.from=null;speechSynthesis&&speechSynthesis.cancel();planUI();drawRoute();
+    sheet.insertAdjacentHTML('afterbegin','<div class="warn">Busca la placa del local más cercano, escribe su código en «Estoy en» y pulsa «Empezar» otra vez. El destino se mantiene.</div>')};
+  document.getElementById('reo').onclick=()=>orientUI(false);
+  document.getElementById('chk').onclick=()=>checkUI();
+  document.getElementById('fix').onclick=()=>{const t=prompt('Describe qué no coincide en este tramo (puerta cerrada, escala que no existe, otro camino…):');if(t){notes.push({t:new Date().toISOString().slice(0,16).replace('T',' '),paso:p.say,de:S.from.n,a:S.to.n,nota:t});saveNotes();alert('Corrección guardada en este móvil.')}}}
+function advance(p){const s=S.steps[S.i];const pend=s.stopIdx.filter(j=>j>=S.si);
+  if(pend.length){S.si=pend[0]+1}
+  const left=S.stops.length-1-S.si;
+  const more=s.stopIdx.filter(j=>j>=S.si);
+  if(more.length&&s.kind==='walk'){const nx=S.stops[more[0]];let m='Correcto, vas bien. Próxima parada: '+nx.name+'.';
+    if(left===2){flash('warn','Atención: tu destino está a 2 paradas');m+=' Atención: tu destino está a dos paradas.'}else flash('ok','✓ Vas bien');
+    return navUI(true,m)}
+  // siguiente tramo
+  S.facing=p.newFacing;S.i++;const ns=S.steps[S.i];
+  if(ns.kind==='arrive'){S.si=S.stops.length-1;clearTimeout(watchT);const m='Has llegado a '+S.to.n+'.';flash('arr','✓ '+m,true);navUI(false);speak(m);return}
+  if(left===2){flash('warn','Atención: tu destino está a 2 paradas');setTimeout(()=>speak('Atención: tu destino está a dos paradas.'),2600)}else flash('ok','✓ Vas bien');
+  if(s.kind==='lad'){S.facing=null;orientUI(false)}else navUI(true)}
+// ---- comprobar placa
+function routeDist(nid){const N=G.nodes,n=N[nid];let best=1e9;for(let j=Math.max(0,S.i-1);j<Math.min(S.steps.length,S.i+3);j++){const pts=S.steps[j].pts.map(k=>N[k]).filter(x=>x.d===n.d);
+  for(let i=0;i<pts.length;i++){const a=pts[i],b=pts[i+1]||a;const P=[mxy(a.fr,a.dy),mxy(b.fr,b.dy)];const pr=proj(mxy(n.fr,n.dy),P);best=Math.min(best,pr.d)}}return best}
+function checkUI(){const box=document.getElementById('chkbox');box.innerHTML=`<div class="field"><input id="plq" placeholder="Código de la placa, ej. 1-79-00-C" autocomplete="off"></div><div class="row"><button class="btn pri" id="plgo">Comprobar</button></div><div id="plres"></div>`;
+  const q=document.getElementById('plq');q.focus();
+  document.getElementById('plgo').onclick=()=>{const r=resolveCode(q.value);const out=document.getElementById('plres');
+    if(!r){out.innerHTML='<p class="hint">No reconozco ese código. Escríbelo como aparece en la placa, por ejemplo 2-93-00-E.</p>';return}
+    const dist=routeDist(r.nid);
+    if(dist<=6){flash('ok','✓ Vas bien: estás en la ruta');speak('Vas bien, estás en la ruta.');out.innerHTML=''}
+    else{flash('bad','¡PARA! Te has desviado de la ruta',true);speak('Para. Te has desviado de la ruta. Te recalculo el camino desde aquí.');
+      out.innerHTML=`<div class="warn" style="border-color:#d93025">Estás en <b>${r.n}</b>, fuera de la ruta.</div><div class="row"><button class="btn go" id="rec">Recalcular desde aquí</button></div>`;
+      document.getElementById('rec').onclick=()=>{const b=document.getElementById('alertb');if(b)b.style.display='none';S.from={nid:r.nid,n:r.n,d:r.d};startNav()}}}}
+// ---- órdenes por voz en español
+const NUMW={uno:1,una:1,primero:1,primera:1,dos:2,segundo:2,segunda:2,tres:3,tercero:3,tercera:3,cuatro:4,cuarto:4,cuarta:4,cinco:5,seis:6,siete:7,ocho:8,nueve:9};
+const ESR=[[/cuadro principal (?:numero |n )?(\d)|\bmsb ?-? ?(\d)/,'eq',d=>'MSB-4PWS000'+d,'cuadro principal $'],[/(?:centro de carga|load cent(?:er|re)|\blc) ?(?:numero |n )?(\d)/,'eq',d=>'LCS-4PWS000'+d,'Load Centre $'],
+ [/ups (?:del |de )?puente/,'eq',()=>'UPS-24PW0001','UPS del puente'],[/(?:sala|local|cuarto) de cuadros (?:numero |n )?(\d)|cuadros (?:numero |n )?(\d)/,'q',d=>'No. '+d+' SWITCHBOARDS','sala de cuadros $'],
+ [/cocina/,'q',()=>'GALLEY','cocina'],[/puente/,'q',()=>'NAVIGATION BRIDGE','puente'],[/(?:sala|centro|puesto) de control|control de plataforma|control de maquinas|ipms/,'q',()=>'PLATFORM CONTROL','sala de control'],
+ [/(?:camara |sala )?de maquinas de proa|maquinas proa/,'q',()=>'FORWARD ENGINE ROOM','cámara de máquinas de proa'],[/(?:camara |sala )?de maquinas de popa|maquinas popa/,'q',()=>'AFT ENGINE ROOM','cámara de máquinas de popa'],
+ [/generador(?:es)? de proa/,'q',()=>'FWD DIESEL GENERATOR','generadores de proa'],[/generador(?:es)? de popa/,'q',()=>'AFT DIESEL GENERATOR','generadores de popa'],[/maquinaria auxiliar|auxiliar/,'q',()=>'AUXILIARY MACHINERY','maquinaria auxiliar'],
+ [/taller de helicopter/,'q',()=>'HELICOPTER WORKSHOP','taller de helicópteros'],[/taller electric/,'q',()=>'ELECTRICAL-ELECTRONIC','taller eléctrico'],[/taller general|taller/,'q',()=>'GENERAL WORKSHOP','taller general'],
+ [/hangar/,'q',()=>'HANGAR','hangar'],[/enfermeria/,'q',()=>'INFIRMARY','enfermería'],[/hospital/,'q',()=>'HOSPITAL','hospital'],[/comedor de marineria|comedor de tropa/,'q',()=>'ENLISTED MESSROOM','comedor de marinería'],
+ [/comedor de suboficiales/,'q',()=>'PETTY OFFICERS MESSROOM','comedor de suboficiales'],[/camara de oficiales|comedor de oficiales/,'q',()=>'OFFICERS MESSROOM','cámara de oficiales'],[/lavanderia/,'q',()=>'LAUNDRY','lavandería'],
+ [/gimnasio/,'q',()=>'GYMNASIUM','gimnasio'],[/servomotor|timon/,'q',()=>'STEERING GEAR','servomotor'],[/control de vuelo|flyco/,'q',()=>'FLIGHT CONTROL','control de vuelo'],
+ [/control de averias (?:numero |n )?(\d)|averias (\d)/,'q',d=>'DAMAGE CONTROL '+d,'control de averías $'],[/control de averias|averias/,'q',()=>'DAMAGE CONTROL','control de averías'],
+ [/equipos electronicos (?:numero |n )?(\d)|electronica (\d)/,'q',d=>'ELECTRONIC EQUIPMENT '+d,'equipos electrónicos $'],[/ventiladores (?:numero |n )?(\d)/,'q',d=>'FAN ROOM '+d,'ventiladores $'],
+ [/\bcic\b|centro de combate|centro de informacion/,'q',()=>'C.I.C.','CIC'],[/radio/,'q',()=>'RADIO ROOM','radio'],[/redes/,'q',()=>'NETWORKS','redes'],[/giroscop/,'q',()=>'GYRO','giroscópicas'],
+ [/agua nebulizada/,'q',()=>'WATERMIST','agua nebulizada'],[/(?:toma|conexion) de tierra (?:de )?babor/,'q',()=>'PORT SHORE','conexión de tierra de babor'],[/(?:toma|conexion) de tierra (?:de )?estribor/,'q',()=>'STARBOARD SHORE','conexión de tierra de estribor'],
+ [/lancha|bote/,'q',()=>'LEVEL 02 OPEN DECK','cubierta 02']];
+function normEs(s){s=norm(s).replace(/\b(numero|num|nro)\b/g,'numero');return s.split(' ').map(w=>NUMW[w]!=null?String(NUMW[w]):w).join(' ').replace(/(\d) (\d)/g,'$1$2')}
+function pickByNum(list,d){if(!d)return list[0];const re=new RegExp('(No\\.?|N[º°o]\\.?)\\s*'+d+'\\b','i');return list.find(r=>re.test(r.n))||list[0]}
+function understand(phrase){const t=normEs(phrase);if(!t)return null;
+  for(const[rx,kind,f,lab]of ESR){const m=t.match(rx);if(!m)continue;const d=(m.slice(1).find(x=>x)||'');const q=f(d);
+    if(kind==='eq'){const e=EQ.find(x=>x.tag===q);if(e&&eqNid(e)!=null){const n=G.nodes[eqNid(e)];return{nid:eqNid(e),n:`${e.tag} (${e.room||ENG.DECKNAME[n.d]})`,d:n.d,lab:lab.replace('$',d)}}continue}
+    let L=matches(q).filter(r=>!r.approx);if(/GENERATOR|ENGINE ROOM|AUXILIARY/.test(q)){const tt=L.filter(r=>r.d==='toptanks');if(tt.length)L=tt}
+    const r=pickByNum(L,d);if(r)return Object.assign({},r,{lab:lab.replace('$',d)})}
+  const L=matches(phrase);return L.length?Object.assign({},L[0],{lab:phrase}):null}
+function splitOD(t){t=normEs(t);let m=t.match(/(?:estoy en|estoy|desde|salgo de|saliendo de)\s+(.*?)\s*(?:\by\b\s*)?(?:quiero ir|necesito ir|tengo que ir|voy|ir|llevame|hasta)\s+(?:a la |al |a |hasta )?(.+)$/);
+  if(m)return{o:m[1],d:m[2]};m=t.match(/(?:quiero ir|necesito ir|tengo que ir|voy|llevame|ir)\s+(?:a la |al |a |hasta )?(.+)$/);if(m)return{o:null,d:m[1]};
+  m=t.match(/(?:estoy en|estoy)\s+(.+)$/);if(m)return{o:m[1],d:null};return{o:null,d:t}}
+function voiceUI(){S.phase='plan';const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  sheet.innerHTML=`<h2>🎤 Dímelo en español</h2><p class="hint" style="margin-top:0">Toca la casilla, pulsa el <b>micrófono del teclado</b> y di, por ejemplo: <i>«Estoy en la cocina y quiero ir al cuadro principal uno»</i>.</p>
+  <div class="field"><textarea id="vtx" rows="3" style="width:100%;font-size:1rem" placeholder="Estoy en… y quiero ir a…"></textarea></div>
+  <div class="row"><button class="btn go" id="vgo">Entender</button>${SR?'<button class="btn" id="vlisten">🎙 Escuchar</button>':''}<button class="btn" id="vback">Volver</button></div><div id="vres"></div>`;
+  document.getElementById('vback').onclick=()=>planUI();
+  const run=()=>{const txt=document.getElementById('vtx').value;const od=splitOD(txt);const o=od.o?understand(od.o):null;const d=od.d?understand(od.d):null;const out=document.getElementById('vres');
+    if(!o&&!d){out.innerHTML='<div class="warn">No te he entendido. Prueba con «Estoy en … y quiero ir a …».</div>';speak('No te he entendido.');return}
+    const line=(lab,r)=>r?`<b>${clean(r.n)}</b> <span class="small">(${r.lab})</span>`:'<i>no indicado: márcalo tú</i>';
+    out.innerHTML=`<div class="say">Desde: ${od.o?line('',o):(S.from?'<b>'+clean(S.from.n)+'</b> <span class="small">(posición actual)</span>':'<i>no indicado</i>')}<br>Hasta: ${line('',d)}</div><div class="row"><button class="btn go" id="vyes">Sí, es correcto</button><button class="btn" id="vno">Corregir</button></div>`;
+    speak(`Entendido. ${o?'Desde '+clean(o.n)+'.':''} ${d?'Hasta '+clean(d.n)+'.':''} ¿Es correcto?`);
+    document.getElementById('vno').onclick=()=>{out.innerHTML='';document.getElementById('vtx').focus()};
+    document.getElementById('vyes').onclick=()=>{if(o)S.from={nid:o.nid,n:o.n,d:o.d};if(d)S.to={nid:d.nid,n:d.n,d:d.d};if(S.from&&S.to)startNav();else{planUI();drawRoute()}}};
+  document.getElementById('vgo').onclick=run;
+  if(SR)document.getElementById('vlisten').onclick=()=>{try{const r=new SR();r.lang='es-ES';r.interimResults=false;r.onresult=e=>{document.getElementById('vtx').value=e.results[0][0].transcript;run()};r.onerror=()=>{document.getElementById('vres').innerHTML='<div class="warn">El reconocimiento de voz no está disponible ahora (puede necesitar internet). Usa el micrófono del teclado.</div>'};r.start()}catch(e){}}}
+
 function orientUI(first){const d=G.nodes[S.steps[S.i].pts[0]].d;if(cur.key!==d)show(d,true);focusMe(true);drawRoute();
   sheet.innerHTML=`<h2>${first?'Orientación inicial':'¿Hacia dónde miras ahora?'}</h2>
   <p class="hint">${first?'Ponte de pie de cara a la <b>proa</b> del buque y pulsa «Miro a proa».':'Mira a tu alrededor y dime hacia dónde está mirando tu cara.'} Pistas: los números de cuaderna <b>aumentan hacia proa</b>; con la cara a proa, <b style="color:var(--port)">babor</b> queda a tu izquierda y <b style="color:var(--stbd)">estribor</b> a tu derecha. En el plano, la proa está arriba.</p>
@@ -374,27 +516,6 @@ function arrowSVG(a){if(a==='sube'||a==='baja')return`<svg viewBox="0 0 80 80" a
   if(a==='fin')return`<svg viewBox="0 0 80 80" aria-hidden="true"><circle cx="40" cy="40" r="36" fill="var(--hi)"/><path d="M24 41 L36 53 L58 28" stroke="#14284b" stroke-width="8" fill="none" stroke-linecap="round"/></svg>`;
   const rot=typeof a==='number'?[0,90,180,-90][a]:ARW[a];
   return`<svg viewBox="0 0 80 80" aria-hidden="true"><circle cx="40" cy="40" r="38" fill="var(--route)"/><g transform="rotate(${rot} 40 40)"><path d="M40 12 L62 40 L48 40 L48 66 L32 66 L32 40 L18 40 Z" fill="#fff"/></g></svg>`}
-function navUI(speakIt){S.phase='nav';const s=S.steps[S.i];const p=ENG.phrase(s,S.facing,G);
-  const d=G.nodes[s.pts[0]].d;if(cur.key!==d)show(d,true);S.base=S.count;drawRoute();focusMe(true);
-  const total=S.steps.length;let extra='';
-  if(s.kind==='arrive'&&s.db)extra='<div class="warn">El destino está en el doble fondo: el acceso es por registro desde esta plataforma, solo con permiso de trabajo y procedimiento de espacio confinado.</div>';
-  sheet.innerHTML=`<div class="cmd">${arrowSVG(p.arrow)}<div><div class="big">${p.short}</div><div class="sub">${p.sub}</div></div></div>
-  <div class="say">${p.say}</div>${p.stops&&p.stops.length?`<p class="small" style="margin:.2rem 0">Paradas: ${p.stops.map((x,k)=>k===p.stops.length-1?'<b>'+x+'</b>':x).join(' → ')}</p>`:''}${extra}
-  ${s.kind==='walk'?`<div class="bar"><i id="pbar"></i></div><div class="small" id="pcount">${S.stepsOn?'0 pasos':'Pulsa «Hecho» al completar este tramo'}</div>`:''}
-  <div class="row">${s.kind==='arrive'?`<button class="btn go" id="fin">Terminar</button>`:`<button class="btn go" id="done">Hecho ✓</button>`}
-   <button class="btn" id="rep" aria-label="Repetir instrucción">🔊</button><button class="btn" id="back" ${S.i?'':'disabled'}>Atrás</button><button class="btn" id="lost">Estoy perdido</button></div>
-  <div class="row"><button class="btn" id="reo">Reorientar</button><button class="btn" id="fix">Corregir</button></div>
-  <p class="small">Paso ${S.i+1} de ${total} · destino: ${S.to.n}</p>`;
-  if(speakIt)speak(p.say);
-  const done=document.getElementById('done');if(done)done.onclick=()=>{S.facing=p.newFacing;S.i++;const nx=S.steps[S.i];
-    if(S.steps[S.i-1].kind==='lad'){S.facing=null;orientUI(false)}else navUI(true)};
-  const fin=document.getElementById('fin');if(fin)fin.onclick=()=>{S.from={nid:S.to.nid,n:S.to.n,d:S.to.d,ref:S.to.ref};S.to=null;S.steps=null;planUI();drawRoute()};
-  document.getElementById('rep').onclick=()=>speak(p.say);
-  document.getElementById('back').onclick=()=>{S.i=Math.max(0,S.i-1);S.facing=null;orientUI(false)};
-  document.getElementById('lost').onclick=()=>{S.steps=null;S.from=null;speechSynthesis&&speechSynthesis.cancel();planUI();drawRoute();
-    sheet.insertAdjacentHTML('afterbegin','<div class="warn">Busca la placa del local más cercano o un número de cuaderna, márcalo como «Estoy en» y pulsa «Empezar» otra vez. El destino se mantiene.</div>')};
-  document.getElementById('reo').onclick=()=>orientUI(false);
-  document.getElementById('fix').onclick=()=>{const t=prompt('Describe qué no coincide en este tramo (puerta cerrada, escala que no existe, otro camino…):');if(t){notes.push({t:new Date().toISOString().slice(0,16).replace('T',' '),paso:p.say,de:S.from.n,a:S.to.n,nota:t});saveNotes();alert('Corrección guardada en este móvil.')}}}
 function notesHTML(){if(!notes.length)return'';return`<details><summary>Correcciones anotadas (${notes.length})</summary><p class="hint">Cópialas y pégamelas en el chat para corregir el trazado.</p><textarea id="nt" readonly>${notes.map(n=>`[${n.t}] ${n.de} → ${n.a}\nPaso: ${n.paso}\nNota: ${n.nota}`).join('\n\n')}</textarea><div class="row"><button class="btn" id="ncp">Copiar</button><button class="btn" id="ncl">Borrar</button></div></details>`}
 function bindNotes(){const c=document.getElementById('ncp');if(c)c.onclick=()=>{const t=document.getElementById('nt');t.select();try{navigator.clipboard.writeText(t.value)}catch(e){document.execCommand('copy')}c.textContent='Copiado'};
   const l=document.getElementById('ncl');if(l)l.onclick=()=>{if(confirm('¿Borrar todas las correcciones?')){notes=[];saveNotes();planUI()}}}
