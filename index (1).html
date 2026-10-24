@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="AVANTE Nav">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#14284b">
+<title>AVANTE 2200 · Navegador a bordo</title>
+<style>
+:root{--ink:#14284b;--ink2:#3d5378;--paper:#ffffff;--panel:#eef2f7;--line:#c9d3e0;--hi:#f2c200;--port:#c8102e;--stbd:#00843d;--muted:#5b6b84;--route:#1a73e8;--plan-filter:none;color-scheme:light;
+  font-family:"Bahnschrift","DIN Alternate","Roboto Condensed","Arial Narrow",system-ui,sans-serif;
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);height:100%}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--ink:#dfe7f3;--ink2:#a9b8d0;--paper:#0f1a2c;--panel:#16233a;--line:#2c3d5c;--port:#ff5a6e;--stbd:#3ccf7f;--muted:#8fa0bb;--route:#8ab4f8;--plan-filter:invert(.9) hue-rotate(180deg);color-scheme:dark}}
+:root[data-theme="dark"]{--ink:#dfe7f3;--ink2:#a9b8d0;--paper:#0f1a2c;--panel:#16233a;--line:#2c3d5c;--port:#ff5a6e;--stbd:#3ccf7f;--muted:#8fa0bb;--route:#8ab4f8;--plan-filter:invert(.9) hue-rotate(180deg);color-scheme:dark}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;overflow:hidden;-webkit-text-size-adjust:100%}
+body{background:var(--paper);color:var(--ink);display:flex;flex-direction:column}
+header{display:flex;align-items:baseline;gap:.6rem;padding:.5rem .8rem .4rem;border-bottom:1px solid var(--line)}
+header h1{font-size:1rem;margin:0;white-space:nowrap}
+#dname{font-size:.76rem;color:var(--muted);margin-left:auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+main{flex:1;display:flex;min-height:0}
+nav{width:52px;flex:none;display:flex;flex-direction:column;gap:3px;padding:6px 4px;border-right:1px solid var(--line);background:var(--panel);overflow-y:auto}
+nav button{font:inherit;font-weight:700;font-size:.88rem;height:36px;border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:3px;padding:0;cursor:pointer}
+nav button{border-left:6px solid var(--dc)!important}nav button[aria-pressed=true]{background:var(--dc);color:#14284b;border-color:var(--dc)}
+.tint{position:absolute;inset:0;pointer-events:none;opacity:.16}
+header{border-bottom:4px solid var(--deckc,var(--line))!important}
+.chip{font:inherit;font-size:.82rem;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:14px;padding:.35rem .7rem;cursor:pointer;margin:0 6px 6px 0}
+.chip[aria-pressed=true]{background:var(--ink);color:var(--paper)}
+.tabs{display:flex;gap:6px;margin-bottom:.5rem}.tabs .btn{flex:1}
+.badge{font-size:.72rem;padding:1px 6px;border-radius:8px;font-weight:700}.b-Alta{background:#e6f4ea;color:#137333}.b-Media{background:#fef7e0;color:#8a6100}.b-Pendiente{background:#fce8e6;color:#c5221f}
+.dk{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:middle}
+nav button.rt{box-shadow:inset 4px 0 0 var(--route)}
+#view{flex:1;position:relative;overflow:hidden;touch-action:none}
+#stage{position:absolute;left:0;top:0;transform-origin:0 0}
+#stage>img{display:block;filter:var(--plan-filter);pointer-events:none;user-select:none;-webkit-user-drag:none}
+#stage svg{position:absolute;inset:0;overflow:visible;pointer-events:none}
+.pin{position:absolute;width:0;height:0}
+.pin>span{position:absolute;transform:translate(-50%,-50%) scale(var(--inv));display:block;border-radius:50%;left:0;top:0}
+.me>span{width:26px;height:26px;background:#1e7cf2;border:4px solid #fff;box-shadow:0 0 0 2px #1e7cf2,0 0 0 12px rgba(30,124,242,.25)}
+.dst>span{width:26px;height:26px;background:#d93025;border:3px solid #fff;border-radius:50% 50% 50% 0 !important;transform:translate(-50%,-100%) rotate(-45deg) scale(var(--inv)) !important;box-shadow:0 2px 4px rgba(0,0,0,.4)}
+.lad>span{width:auto;height:auto;border-radius:3px;font-size:14px;font-weight:700;color:var(--ink);background:var(--paper);border:1.5px solid var(--ink);padding:1px 3px}
+.ov{position:absolute;pointer-events:none;font-weight:700;font-size:.72rem;letter-spacing:.04em;padding:2px 6px;border-radius:2px;background:var(--paper);opacity:.92}
+#bow{top:6px;left:50%;transform:translateX(-50%)}
+#p{left:4px;top:50%;transform:translateY(-50%) rotate(-90deg);transform-origin:left center;color:var(--port);margin-left:10px}
+#s{right:4px;top:50%;transform:translateY(-50%) rotate(90deg);transform-origin:right center;color:var(--stbd);margin-right:10px}
+#zoom{position:absolute;right:8px;bottom:8px;display:flex;flex-direction:column;gap:4px}
+.btn{font:inherit;font-weight:700;border:1px solid var(--ink);background:var(--paper);color:var(--ink);border-radius:4px;min-height:42px;min-width:42px;padding:0 .8rem;cursor:pointer;font-size:.95rem}
+.btn.pri{background:var(--ink);color:var(--paper)}
+.btn.go{background:var(--hi);color:#14284b;border-color:#14284b}
+.btn:disabled{opacity:.4}
+button:focus-visible,input:focus-visible{outline:3px solid var(--hi);outline-offset:1px}
+#sheet{flex:none;border-top:2px solid var(--ink);background:var(--paper);max-height:52%;overflow-y:auto;padding:10px 12px 12px}
+h2{font-size:1.05rem;margin:.1rem 0 .4rem}
+.hint{font-size:.86rem;color:var(--muted);line-height:1.4;margin:.25rem 0 .5rem}
+.field{display:flex;gap:6px;align-items:center;margin:.3rem 0}
+.field label{width:4.6rem;font-size:.85rem;color:var(--muted);flex:none}
+.field input{flex:1;min-width:0;font:inherit;font-size:1rem;padding:.5rem .6rem;border:1px solid var(--ink2);border-radius:4px;background:var(--paper);color:var(--ink)}
+.field input.ok{border-color:var(--stbd);border-width:2px}
+.res{display:block;width:100%;text-align:left;font:inherit;background:none;border:0;border-bottom:1px solid var(--line);padding:.45rem .1rem;color:var(--ink);cursor:pointer}
+.res b{display:block;font-size:.93rem}.res small{color:var(--muted);font-size:.78rem}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin:.5rem 0}
+.compass{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:.5rem 0}
+.compass .btn{min-height:54px;font-size:1rem}
+.cmd{display:flex;gap:12px;align-items:center}
+.cmd svg{flex:none;width:76px;height:76px}
+.cmd .big{font-size:1.45rem;font-weight:700;line-height:1.15}
+.cmd .sub{font-size:.9rem;color:var(--muted);margin-top:.15rem}
+.say{font-size:.95rem;line-height:1.4;margin:.5rem 0;background:var(--panel);border-left:4px solid var(--route);padding:.45rem .6rem}
+.bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin:.3rem 0}
+.bar i{display:block;height:100%;background:var(--route);width:0}
+.small{font-size:.8rem;color:var(--muted)}
+.toggles{display:flex;gap:14px;flex-wrap:wrap;font-size:.85rem;margin:.4rem 0}
+.toggles label{display:flex;gap:5px;align-items:center}
+.warn{border-left:4px solid var(--hi);background:var(--panel);padding:.4rem .6rem;font-size:.84rem;line-height:1.35;margin:.4rem 0}
+details{margin-top:.6rem;font-size:.85rem}summary{cursor:pointer;color:var(--ink2)}
+textarea{width:100%;font:inherit;font-size:.85rem;min-height:5rem;background:var(--paper);color:var(--ink);border:1px solid var(--line);border-radius:4px}
+</style>
+</head>
+<body>
+<header><h1>AVANTE 2200 · Navegador</h1><span id="dname"></span></header>
+<div id="lock" style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:24px;gap:12px;max-width:420px;margin:0 auto;width:100%">
+<img src="icon-192.png" alt="" width="72" height="72" style="border-radius:16px">
+<h2 style="font-size:1.3rem;margin:0">Navegador a bordo</h2>
+<p class="hint" style="margin:0">Los planos están cifrados. Introduce tu contraseña para abrirlos en este móvil.</p>
+<form id="lockf"><div class="field"><input id="pw" type="password" autocomplete="current-password" placeholder="Contraseña" aria-label="Contraseña"></div>
+<label class="small" style="display:flex;gap:6px;align-items:center;margin:.4rem 0"><input type="checkbox" id="rem" checked> Recordar en este iPhone</label>
+<button class="btn go" type="submit" style="width:100%">Abrir</button></form><p class="hint" id="lockmsg" role="status"></p></div>
+<main style="display:none">
+  <nav id="decks" aria-label="Cubiertas"></nav>
+  <div id="view"><div id="stage"></div>
+    <div class="ov" id="bow">▲ PROA</div><div class="ov" id="p">BABOR</div><div class="ov" id="s">ESTRIBOR</div>
+    <div id="zoom"><button class="btn" id="zi" aria-label="Acercar">+</button><button class="btn" id="zo" aria-label="Alejar">−</button><button class="btn" id="zf" aria-label="Centrar en mí">◎</button></div>
+  </div>
+</main>
+<section id="sheet" style="display:none"></section>
+<script>
+function boot(P){const DECKS=P.DECKS,G=P.G,EQ=P.EQ||[],CAPN=P.CAPN||{},CODES=P.CODES||{},META=P.META;
+// Navigation engine (shared by test and page)
+const ENG=(function(){
+const DECKNAME={doublebottom:'Doble fondo (marrón)',toptanks:'Plataformas (naranja)',second:'Segunda cubierta (amarilla)',main:'Cubierta principal (verde)',level01:'Nivel 01 (celeste)',level02:'Nivel 02 (azul)',level03:'Nivel 03 (lila)'};
+const LVL={doublebottom:0,toptanks:1,second:2,main:3,level01:4,level02:5,level03:6};
+const HEAD=['proa','estribor','popa','babor'];
+const sideOf=dy=>dy<-35?'babor':dy>35?'estribor':'crujía';
+function build(G){const adj=G.nodes.map(()=>[]);G.edges.forEach(([a,b,c,t])=>{adj[a].push([b,c,t]);adj[b].push([a,c,t])});G.adj=adj;return G}
+function path(G,s,t){const n=G.nodes.length,d=new Array(n).fill(Infinity),p=new Array(n).fill(-1),pt=new Array(n).fill(null),done=new Uint8Array(n);d[s]=0;
+  for(;;){let u=-1,m=Infinity;for(let i=0;i<n;i++)if(!done[i]&&d[i]<m){m=d[i];u=i}if(u<0||u===t)break;done[u]=1;
+    for(const[v,c,ty]of G.adj[u]){if(d[u]+c<d[v]){d[v]=d[u]+c;p[v]=u;pt[v]=ty}}}
+  if(d[t]===Infinity)return null;const P=[];for(let v=t;v!==-1;v=p[v])P.unshift({n:v,via:pt[v]});return P}
+function heading(A,B){const dx=(B.fr-A.fr)*0.67,dy=(B.dy-A.dy)*0.0529;if(Math.abs(dx)>=Math.abs(dy))return dx>=0?0:2;return dy>=0?1:3}
+function turn(from,to){const k=((to-from)%4+4)%4;return k===0?null:k===1?'derecha':k===3?'izquierda':'atrás'}
+// Build steps: list of {kind,text,head,deck,pts:[nodeIds],dist}
+function steps(G,P,dest){const N=G.nodes;const S=[];let cur=null;
+  for(let i=1;i<P.length;i++){const a=N[P[i-1].n],b=N[P[i].n];
+    if(P[i].via==='v'){if(cur){S.push(cur);cur=null}
+      const up=LVL[b.d]>LVL[a.d];S.push({kind:'lad',up,from:a.d,to:b.d,fr:a.fr,dy:a.dy,virt:!!a.virt,pts:[P[i-1].n,P[i].n],deck:a.d});continue}
+    const dist=Math.hypot((b.fr-a.fr)*0.67,(b.dy-a.dy)*0.0529);if(dist<0.3)continue;
+    const h=heading(a,b);
+    if(cur&&cur.head===h&&cur.deck===a.d){cur.dist+=dist;cur.pts.push(P[i].n);cur.toFr=b.fr;cur.toDy=b.dy;cur.door=(P[i].via==='door'&&i===P.length-1)}
+    else{if(cur)S.push(cur);cur={kind:'walk',head:h,deck:a.d,dist,pts:[P[i-1].n,P[i].n],fromFr:a.fr,toFr:b.fr,toDy:b.dy,door:(P[i].via==='door'&&i===P.length-1),exit:(i===1&&P[1].via==='door')}}}
+  if(cur)S.push(cur);
+  // merge tiny walks (<1.5 m) into neighbours
+  const T=[];for(const s of S){if(s.kind==='walk'&&s.dist<1.5&&T.length&&T[T.length-1].kind==='walk'&&T[T.length-1].deck===s.deck){T[T.length-1].pts.push(...s.pts.slice(1));T[T.length-1].toFr=s.toFr;T[T.length-1].toDy=s.toDy;T[T.length-1].door=s.door;continue}T.push(s)}
+  T.push({kind:'arrive',deck:N[P[P.length-1].n].d,pts:[P[P.length-1].n],dest});return T}
+// Phrase a step given current facing (0..3 or null). returns {say, short, arrow, newFacing}
+function phrase(st,facing,G){const f=n=>Math.round(n);
+  if(st.kind==='walk'){const fr=Math.max(1,Math.round(Math.abs(st.toFr-st.fromFr)));const m=Math.max(1,Math.round(st.dist));const pasos=Math.max(2,Math.round(st.dist/0.7));
+    const dir=HEAD[st.head];let lead='';let arrow=st.head;
+    if(facing!=null){const t=turn(facing,st.head);arrow=t===null?'recto':t;lead=t===null?'Sigue recto':t==='atrás'?'Da media vuelta':'Gira a la '+t}
+    const along=(st.head===0||st.head===2)?`unas ${fr} cuadernas`:`unos ${m} metros`;
+    const end=st.door?' hasta la puerta del local':(st.head===0||st.head===2)?` hasta la cuaderna ${f(st.toFr)}`:'';
+    let say;
+    if(st.dist<2){say=(lead?lead+' y avanza':'Avanza')+` un par de pasos hacia ${dir}${st.door?' hasta la puerta del local':''}.`}
+    else{const amt=(st.head===0||st.head===2)?along:(m===1?'un metro':`unos ${m} metros`);say=(lead?lead+' y camina':'Camina')+` hacia ${dir} ${amt}${end} (unos ${pasos} pasos).`}
+    if(st.exit)say='Sal del local. '+say;
+    return{say,short:(lead||('Hacia '+dir)),sub:`Hacia ${dir} · ${m} m · ~${pasos} pasos`,arrow,newFacing:st.head}}
+  if(st.kind==='lad'){const v=st.up?'Sube':'Baja';const say=st.virt?`${v} a ${DECKNAME[st.to]} por el acceso de la zona, cerca de la cuaderna ${f(st.fr)}. El plano no marca esta escala: confírmala a bordo. Al llegar, dime hacia dónde miras.`
+      :`${v} por la escala de la cuaderna ${f(st.fr)}, ${sideOf(st.dy)}, hasta ${DECKNAME[st.to]}. Al llegar, dime hacia dónde miras.`;
+    return{say,short:v+' a '+DECKNAME[st.to],sub:`Escala cuad. ${f(st.fr)} · ${sideOf(st.dy)}`,arrow:st.up?'sube':'baja',newFacing:null}}
+  if(st.kind==='arrive'){return{say:`Has llegado a ${st.dest}.`,short:'Has llegado',sub:st.dest,arrow:'fin',newFacing:facing}}}
+return{build,path,steps,phrase,DECKNAME,LVL,HEAD,sideOf};})();
+
+
+ENG.build(G);
+const PLANKEYS=['level03','level02','level01','main','second','toptanks','doublebottom'];
+let EQA={};try{EQA=JSON.parse(localStorage.getItem('avt-eqa')||'{}')}catch(e){}
+const saveEQA=()=>{try{localStorage.setItem('avt-eqa',JSON.stringify(EQA))}catch(e){}};
+const SHORT={level03:'03',level02:'02',level01:'01',main:'CP',second:'2ª',toptanks:'PL',doublebottom:'DF'};
+const DK={};DECKS.forEach(d=>DK[d.key]=d);
+const GLOSS=[[/NAVIGATION BRIDGE/,"Puente"],[/SWITCHBOARDS/,"Cuadros eléctricos"],[/DIESEL GENERATOR/,"Generadores"],[/ENGINE ROOM/,"Cámara de máquinas"],[/AUXILIARY MACHINERY/,"Maquinaria auxiliar"],[/PLATFORM CONTROL/,"Control de plataforma"],[/DAMAGE CONTROL/,"Control de averías"],[/ELECTRONIC EQUIPMENT/,"Equipos electrónicos"],[/FAN ROOM/,"Ventiladores"],[/GALLEY/,"Cocina"],[/STEERING GEAR/,"Servomotor"],[/SEA CHEST/,"Toma de mar"],[/SHORE CONNECTION/,"Conexión de tierra"],[/FLIGHT CONTROL/,"Control de vuelo"],[/WORKSHOP/,"Taller"],[/^HANGAR/,"Hangar"],[/MESSROOM/,"Comedor"],[/CABIN/,"Camarote"],[/INFIRMARY/,"Enfermería"],[/HOSPITAL/,"Hospital"],[/LAUNDRY/,"Lavandería"],[/STOREROOM/,"Pañol"],[/PROVISIONS/,"Gambuza"],[/MAGAZINE/,"Pañol de munición"],[/WATERMIST/,"Agua nebulizada"],[/WINDLASS/,"Molinete"],[/GYRO/,"Giroscópicas"],[/C\.I\.C\./,"CIC"],[/RADIO/,"Radio"],[/NETWORKS/,"Redes"],[/TK\.|DFM|BALLAST/,"Tanque"],[/SANITARY|ABLUTION/,"Aseos"],[/OFFICE/,"Oficina"],[/GYMNASIUM/,"Gimnasio"],[/PRAYER/,"Oración"]];
+const SYN=[["puente","NAVIGATION BRIDGE"],["cuadro","SWITCHBOARDS"],["generador","GENERATOR"],["máquinas","ENGINE ROOM"],["maquinas","ENGINE ROOM"],["cocina","GALLEY"],["taller","WORKSHOP"],["enfermer","INFIRMARY"],["comedor","MESSROOM"],["camarote","CABIN"],["servo","STEERING"],["toma","SEA CHEST"],["tanque","TK."],["lavander","LAUNDRY"],["avería","DAMAGE CONTROL"],["averia","DAMAGE CONTROL"],["ventila","FAN ROOM"],["electrónic","ELECTRONIC"],["control de plataforma","PLATFORM CONTROL"],["ipms","PLATFORM CONTROL"],["tierra","SHORE"],["vuelo","FLIGHT"],["auxiliar","AUXILIARY"],["giro","GYRO"],["oficina","OFFICE"],["gambuza","PROVISIONS"],["pañol","STOREROOM"]];
+const gloss=n=>{for(const[r,g]of GLOSS)if(r.test(n))return g;return""};
+// all rooms
+const ROOMS=[];for(const [ref,nid] of Object.entries(G.rooms)){if(ref.startsWith('cap:')){const c=CAPN[ref];if(c)ROOMS.push({ref,nid,d:c.d,n:c.n,code:c.code,fr:c.fr,dy:c.dy});continue}const [d,i]=ref.split(':');const it=DK[d].items[+i];if(!it)continue;ROOMS.push({ref,nid,d,n:it.n,fr:it.fr,dy:it.dy})}
+for(const [code,c] of Object.entries(CODES)){const r=ROOMS.find(x=>x.nid===c.nid);if(r&&!r.code)r.code=code}
+const sideTxt=ENG.sideOf;
+// ---------- state
+let st={s:1,x:0,y:0},cur=null,showLad=true;
+let S={phase:'plan',from:null,to:null,facing:null,route:null,steps:null,i:0,needOrient:false,voice:true,stepsOn:false,count:0,base:0};
+try{const v=JSON.parse(localStorage.getItem('avt-nav')||'{}');if(v.voice===false)S.voice=false}catch(e){}
+let notes=[];try{notes=JSON.parse(localStorage.getItem('avt-notes')||'[]')}catch(e){}
+const saveNotes=()=>{try{localStorage.setItem('avt-notes',JSON.stringify(notes))}catch(e){}};
+// ---------- map
+const view=document.getElementById('view'),stage=document.getElementById('stage'),sheet=document.getElementById('sheet'),nav=document.getElementById('decks');
+PLANKEYS.forEach(k=>{const b=document.createElement('button');b.style.setProperty('--dc',DK[k].color);b.textContent=SHORT[k];b.title=ENG.DECKNAME[k];b.onclick=()=>show(k);nav.appendChild(b);DK[k].btn=b});
+function xy(d,fr,dy){const M=META;return[(dy*3+M.YC-M.Y0)*M.Z,(M.FR1-fr)*M.K*M.Z]}
+function inv(d,X,Y){const M=META;return[M.FR1-Y/(M.K*M.Z),(X/M.Z-M.YC+M.Y0)/3]}
+function apply(anim){stage.style.transition=anim?'transform .35s ease':'none';stage.style.transform=`translate(${st.x}px,${st.y}px) scale(${st.s})`;stage.style.setProperty('--inv',1/st.s)}
+const R=()=>view.getBoundingClientRect();
+const fitS=()=>R().width/cur.w, minS=()=>Math.min(R().width/cur.w,R().height/cur.hgt)*0.9;
+function clamp(){const r=R(),W=cur.w*st.s,H=cur.hgt*st.s,p=60;st.x=W<r.width?(r.width-W)/2:Math.min(p,Math.max(r.width-W-p,st.x));st.y=H<r.height?(r.height-H)/2:Math.min(p,Math.max(r.height-H-p,st.y))}
+function zoomAt(f,cx,cy,anim){const ns=Math.max(minS(),Math.min(1.6,st.s*f)),k=ns/st.s;st.x=cx-(cx-st.x)*k;st.y=cy-(cy-st.y)*k;st.s=ns;clamp();apply(anim)}
+function centerOn(X,Y,s,anim){const r=R();st.s=Math.max(minS(),s||st.s);st.x=r.width/2-X*st.s;st.y=r.height/2-Y*st.s;clamp();apply(anim)}
+function show(k,noFit){cur=DK[k];PLANKEYS.forEach(x=>DK[x].btn.setAttribute('aria-pressed',x===k));document.getElementById('dname').textContent=cur.name+' · '+cur.cname;document.documentElement.style.setProperty('--deckc',cur.color);
+  stage.innerHTML='';const im=new Image();im.src=cur.img;im.width=cur.w;im.height=cur.hgt;im.alt='Plano '+cur.name;stage.appendChild(im);const tn=document.createElement('div');tn.className='tint';tn.style.background=cur.color;stage.appendChild(tn);
+  stage.style.width=cur.w+'px';stage.style.height=cur.hgt+'px';
+  const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('viewBox',`0 0 ${cur.w} ${cur.hgt}`);svg.setAttribute('width',cur.w);svg.setAttribute('height',cur.hgt);svg.id='rsvg';stage.appendChild(svg);
+  for(const l of cur.lad){const [X,Y]=xy(k,l.fr,l.dy);const e=document.createElement('div');e.className='pin lad';e.style.left=X+'px';e.style.top=Y+'px';e.innerHTML='<span>'+(l.t==='U'?'▲':'▼')+'</span>';stage.appendChild(e)}
+  for(const l of (cur.vlad||[])){const [X,Y]=xy(k,l.fr,l.dy);const e=document.createElement('div');e.className='pin lad';e.style.left=X+'px';e.style.top=Y+'px';e.innerHTML='<span>▲▼ V</span>';stage.appendChild(e)}
+  drawRoute();if(!noFit){st.s=fitS();st.x=0;st.y=8;clamp();apply()}}
+function pin(cls,X,Y){const e=document.createElement('div');e.className='pin '+cls;e.style.left=X+'px';e.style.top=Y+'px';e.innerHTML='<span></span>';stage.appendChild(e);return e}
+function drawRoute(){stage.querySelectorAll('.me,.dst').forEach(e=>e.remove());const svg=document.getElementById('rsvg');if(!svg)return;svg.innerHTML='';
+  DECKS.forEach(d=>d.btn&&d.btn.classList.remove('rt'));
+  if(S.steps){const k=cur.key;const used=new Set();
+    S.steps.forEach((s,i)=>{s.pts.forEach(n=>used.add(G.nodes[n].d));if(s.kind!=='walk')return;if(G.nodes[s.pts[0]].d!==k)return;
+      const P=s.pts.map(n=>xy(k,G.nodes[n].fr,G.nodes[n].dy).join(',')).join(' ');
+      const pl=document.createElementNS('http://www.w3.org/2000/svg','polyline');pl.setAttribute('points',P);pl.setAttribute('fill','none');
+      pl.setAttribute('stroke','var(--route)');pl.setAttribute('stroke-linejoin','round');pl.setAttribute('stroke-linecap','round');
+      pl.setAttribute('stroke-width',(i===S.i?14:8)/1);pl.setAttribute('opacity',i<S.i?.3:i===S.i?1:.7);svg.appendChild(pl)});
+    used.forEach(d=>DK[d]&&DK[d].btn&&DK[d].btn.classList.add('rt'))}
+  if(S.to){const n=G.nodes[S.to.nid];if(n&&n.d===cur.key){const [X,Y]=xy(n.d,n.fr,n.dy);pin('dst',X,Y)}}
+  const me=mePos();if(me&&me.d===cur.key){const [X,Y]=xy(me.d,me.fr,me.dy);pin('me',X,Y)}}
+function mePos(){if(S.phase==='nav'&&S.steps){const s=S.steps[S.i];const a=G.nodes[s.pts[0]];
+    if(s.kind==='walk'&&S.stepsOn&&s.dist>0){const f=Math.min(1,(S.count-S.base)*0.7/s.dist);return along(s,f)}return{d:a.d,fr:a.fr,dy:a.dy}}
+  if(S.from){const n=G.nodes[S.from.nid];return{d:n.d,fr:n.fr,dy:n.dy}}return null}
+function along(s,f){let L=0;const P=s.pts.map(n=>G.nodes[n]);const seg=[];for(let i=1;i<P.length;i++){const l=Math.hypot((P[i].fr-P[i-1].fr)*.67,(P[i].dy-P[i-1].dy)*.0529);seg.push(l);L+=l}
+  let t=f*L;for(let i=1;i<P.length;i++){if(t<=seg[i-1]||i===P.length-1){const k=seg[i-1]?Math.min(1,t/seg[i-1]):1;return{d:P[i].d,fr:P[i-1].fr+(P[i].fr-P[i-1].fr)*k,dy:P[i-1].dy+(P[i].dy-P[i-1].dy)*k}}t-=seg[i-1]}}
+function focusMe(anim){const me=mePos();if(!me)return;if(cur.key!==me.d)show(me.d,true);const [X,Y]=xy(me.d,me.fr,me.dy);centerOn(X,Y,Math.max(st.s,.55),anim)}
+// gestures
+const pts=new Map();let moved=0,lastTap=0;
+view.addEventListener('pointerdown',e=>{view.setPointerCapture(e.pointerId);pts.set(e.pointerId,{x:e.clientX,y:e.clientY});moved=0});
+view.addEventListener('pointermove',e=>{if(!pts.has(e.pointerId))return;const p=pts.get(e.pointerId),r=R();
+  if(pts.size===1){st.x+=e.clientX-p.x;st.y+=e.clientY-p.y;moved+=Math.abs(e.clientX-p.x)+Math.abs(e.clientY-p.y);clamp();apply()}
+  else if(pts.size===2){const[a,b]=[...pts.values()];const d0=Math.hypot(a.x-b.x,a.y-b.y);p.x=e.clientX;p.y=e.clientY;const[a2,b2]=[...pts.values()];zoomAt(Math.hypot(a2.x-b2.x,a2.y-b2.y)/d0,(a2.x+b2.x)/2-r.left,(a2.y+b2.y)/2-r.top);moved+=20}
+  p.x=e.clientX;p.y=e.clientY});
+view.addEventListener('pointerup',e=>{if(!pts.has(e.pointerId))return;pts.delete(e.pointerId);if(moved<8&&pts.size===0){
+  const now=Date.now();const r=R();if(now-lastTap<300){zoomAt(2,e.clientX-r.left,e.clientY-r.top,true);lastTap=0;return}lastTap=now;
+  if(S.phase==='plan'&&!e.target.closest('#zoom')){const X=(e.clientX-r.left-st.x)/st.s,Y=(e.clientY-r.top-st.y)/st.s;setTimeout(()=>{if(lastTap===now)tapPlace(X,Y)},310)}}});
+view.addEventListener('pointercancel',e=>pts.delete(e.pointerId));
+view.addEventListener('wheel',e=>{e.preventDefault();const r=R();zoomAt(e.deltaY<0?1.2:1/1.2,e.clientX-r.left,e.clientY-r.top)},{passive:false});
+document.getElementById('zi').onclick=()=>{const r=R();zoomAt(1.5,r.width/2,r.height/2,true)};
+document.getElementById('zo').onclick=()=>{const r=R();zoomAt(1/1.5,r.width/2,r.height/2,true)};
+document.getElementById('zf').onclick=()=>focusMe(true);
+window.addEventListener('resize',()=>{if(cur){clamp();apply()}});
+function tapPlace(X,Y){const [fr,dy]=inv(cur.key,X,Y);let best=null;
+  G.nodes.forEach((n,i)=>{if(n.d!==cur.key||n.k==='lad')return;const dd=Math.hypot((n.fr-fr)*.67,(n.dy-dy)*.0529);if(!best||dd<best[0])best=[dd,i]});
+  if(!best||best[0]>12)return;const n=G.nodes[best[1]];
+  let label;if(n.k==='room'){const r=ROOMS.find(x=>x.nid===best[1]);label=r?r.n:'punto marcado'}else label=`${ENG.DECKNAME[n.d]}, cuad. ${Math.round(n.fr)}, ${sideTxt(n.dy)}`;
+  S.from={nid:best[1],n:label,d:n.d};planUI();drawRoute()}
+// ---------- voice & steps
+function speak(t){if(!S.voice||!('speechSynthesis' in window))return;try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='es-ES';
+  const v=speechSynthesis.getVoices().find(v=>/^es[-_]ES/i.test(v.lang))||speechSynthesis.getVoices().find(v=>/^es/i.test(v.lang));if(v)u.voice=v;u.rate=1;speechSynthesis.speak(u)}catch(e){}}
+let lastPeak=0,above=false;
+function onMotion(e){const a=e.accelerationIncludingGravity||e.acceleration;if(!a)return;const m=Math.hypot(a.x||0,a.y||0,a.z||0);const t=Date.now();
+  if(m>11.2&&!above&&t-lastPeak>320){above=true;lastPeak=t;S.count++;if(S.phase==='nav')tick()}else if(m<9.8)above=false}
+async function enableSteps(on){if(!on){S.stepsOn=false;window.removeEventListener('devicemotion',onMotion);return true}
+  try{if(typeof DeviceMotionEvent!=='undefined'&&typeof DeviceMotionEvent.requestPermission==='function'){const r=await DeviceMotionEvent.requestPermission();if(r!=='granted')throw 0}
+    if(typeof DeviceMotionEvent==='undefined')throw 0;window.addEventListener('devicemotion',onMotion);S.stepsOn=true;S.base=S.count;return true}catch(e){S.stepsOn=false;return false}}
+let tickT=0;function tick(){const s=S.steps&&S.steps[S.i];if(!s||s.kind!=='walk')return;const b=document.getElementById('pbar');const need=Math.max(2,s.dist/0.7);const done=S.count-S.base;
+  if(b)b.style.width=Math.min(100,done/need*100)+'%';const c=document.getElementById('pcount');if(c)c.textContent=`${done} de ~${Math.round(need)} pasos`;
+  if(Date.now()-tickT>500){tickT=Date.now();drawRoute()}
+  if(done>=Math.round(need)&&!s._warned){s._warned=1;speak('Deberías estar llegando. Confirma con Hecho.')}}
+// ---------- search
+const ABBR=[[["msb","esb","lc","sb","ups","cuadro","cuadros","switchboard","main switchboard","cuadro principal","cuadro de emergencia","load centre","load center","centro de carga"],"SWITCHBOARDS"],
+ [["dg","dgs","gen","generador","generadores","grupo","grupos","diesel generator"],"DIESEL GENERATOR"],
+ [["me","mm","motor","motores","motor principal","maquinas","cámara de máquinas","camara de maquinas","sala de maquinas","engine"],"ENGINE ROOM"],
+ [["mcr","pcr","ipms","sala de control","control de plataforma","control de maquinas","cmc"],"PLATFORM CONTROL"],
+ [["cic","cco","combate"],"C.I.C."],[["flyco","vuelo","control de vuelo"],"FLIGHT CONTROL"],
+ [["dcs","sca","averias","averías","control de averias","control de averías"],"DAMAGE CONTROL"],
+ [["spc","shore","tierra","toma de tierra","corriente de tierra"],"SHORE CONNECTION"],
+ [["eer","electronica","electrónica","equipos electronicos","equipos electrónicos"],"ELECTRONIC EQUIPMENT"],
+ [["aux","auxiliar","maquinaria auxiliar"],"AUXILIARY"],[["servo","servomotor","timon","timón","gobierno"],"STEERING"],
+ [["puente","bridge","puente de gobierno"],"NAVIGATION BRIDGE"],[["hvac","ventilacion","ventilación","ventiladores"],"FAN ROOM"],
+ [["taller","talleres"],"WORKSHOP"],[["cocina"],"GALLEY"],[["comedor","mess"],"MESSROOM"],[["camarote","camarotes"],"CABIN"],
+ [["enfermeria","enfermería"],"INFIRMARY"],[["lavanderia","lavandería"],"LAUNDRY"],[["gambuza","viveres","víveres"],"PROVISIONS"],
+ [["pañol","panol"],"STOREROOM"],[["giro","giroscopica","giroscópica"],"GYRO"],[["radio"],"RADIO"],[["redes"],"NETWORKS"],
+ [["agua nebulizada","watermist"],"WATERMIST"],[["toma de mar","tomas de mar"],"SEA CHEST"],[["oficina"],"OFFICE"]];
+const norm=s=>s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9ñ\. ]+/g,' ').replace(/\s+/g,' ').trim();
+let ALIAS={};try{ALIAS=JSON.parse(localStorage.getItem('avt-alias')||'{}')}catch(e){}
+const saveAlias=()=>{try{localStorage.setItem('avt-alias',JSON.stringify(ALIAS))}catch(e){}};
+let lastMiss='';
+function matches(q){const raw=q.trim();q=norm(raw);if(q.length<2)return[];const words=q.split(' ');
+  // user aliases first
+  const own=[];for(const[a,ref]of Object.entries(ALIAS)){if(norm(a).startsWith(q)||q===norm(a)){const r=ROOMS.find(x=>x.ref===ref);if(r&&!own.includes(r))own.push(Object.assign({},r,{alias:a}))}}
+  const terms=[q];
+  for(const[keys,v]of ABBR)for(const k of keys){const nk=norm(k);if(words.includes(nk)||q===nk||(nk.length>3&&q.includes(nk))||(q.length>=3&&nk.startsWith(q)))terms.push(v.toLowerCase())}
+  const base=q.replace(/[\s\-]*\d+$/,'').trim();if(base&&base!==q)for(const[keys,v]of ABBR)if(keys.map(norm).includes(base))terms.push(v.toLowerCase());
+  if(terms.length>1&&q.length<=4)terms.shift();
+  const L=ROOMS.filter(r=>{const t=norm(r.n+' '+gloss(r.n));return terms.some(x=>t.includes(norm(x)))}).filter(r=>!own.some(o=>o.ref===r.ref)).sort((a,b)=>a.n.localeCompare(b.n,'es',{numeric:true}));
+  const rc=resolveCode(raw);const res=(rc?[rc]:[]).concat(own,L.slice(0,20),eqMatches(raw));lastMiss=(own.length||rc?'':raw);return res.slice(0,30)}
+const CODERE=/^\s*(0?\d{1,2})\s*[-\s]\s*(\d{1,3})\s*[-\s]\s*(\d{1,2})\s*[-\s]\s*([a-zA-Z])\s*$/;
+const DECKC={'02':'level02','01':'level01','03':'level03','04':'level03','1':'main','2':'second','3':'toptanks','4':'doublebottom'};
+function resolveCode(q){const m=q.match(CODERE);if(!m)return null;let[_,dk,fr,sd,fn]=m;fn=fn.toUpperCase();
+  const variants=[`${dk}-${+fr}-${sd}-${fn}`,`${dk}-${+fr}-${sd.padStart(2,'0')}-${fn}`,`${dk}-${+fr}-${String(+sd)}-${fn}`];
+  for(const v of variants)if(CODES[v]){const c=CODES[v],n=G.nodes[c.nid];return{nid:c.nid,n:`${c.n} (${v})`,d:n.d,fr:n.fr,dy:n.dy,code:v}}
+  let d=DECKC[dk];if(!d)return null;if(d==='doublebottom')d='toptanks';const s=+sd;const side=s===0?0:(s%2?1:-1);fr=+fr;
+  let best=null;G.nodes.forEach((n,i)=>{if(n.d!==d||n.k==='lad'||n.k==='door')return;if(n.fr>fr+1||n.fr<fr-14)return;const sn=n.dy<-35?-1:n.dy>35?1:0;
+    const sc=Math.abs(n.fr-(fr-4))+(sn===side?0:6);if(!best||sc<best[0])best=[sc,i]});
+  if(!best)return null;const n=G.nodes[best[1]];return{nid:best[1],n:`Compartimento ${dk}-${fr}-${sd}-${fn} (posición aprox.)`,d:n.d,fr:n.fr,dy:n.dy,code:`${dk}-${fr}-${sd}-${fn}`,approx:1}}
+function eqNid(e){return EQA[e.tag]!=null?EQA[e.tag]:e.nid}
+function eqMatches(q){q=norm(q);if(q.length<3)return[];return EQ.filter(e=>eqNid(e)!=null&&norm(e.tag+' '+e.desc).includes(q)).slice(0,10).map(e=>{const n=G.nodes[eqNid(e)];return{nid:eqNid(e),n:`${e.tag} · ${e.desc||e.group}`,d:n.d,fr:n.fr,dy:n.dy,eq:1}})}
+function resHTML(list){return list.map((r,i)=>`<button class="res" data-i="${i}"><b>${r.alias?'★ '+r.alias+' → ':''}${r.eq?'⚡ ':''}${r.n}</b><small><span class="dk" style="background:${DK[r.d]?DK[r.d].color:'#999'}"></span>${r.code&&!r.approx&&!r.n.includes(r.code)?r.code+' · ':''}${ENG.DECKNAME[r.d]} · cuad. ~${Math.round(r.fr)} · ${sideTxt(r.dy)}${gloss(r.n)?' · '+gloss(r.n):''}</small></button>`).join('')}
+function aliasOffer(r){if(!lastMiss||norm(lastMiss)===norm(r.n)||r.alias)return'';const a=lastMiss;
+  return`<div class="warn" id="aof">¿Guardar <b>«${a.replace(/</g,'')}»</b> como tu nombre para <b>${r.n}</b>? Así lo encontrarás escribiéndolo. <div class="row"><button class="btn pri" id="aok">Guardar</button><button class="btn" id="ano">No</button></div></div>`}
+function aliasesHTML(){const k=Object.keys(ALIAS);if(!k.length)return'';return`<details><summary>Mis nombres (${k.length})</summary>${k.map(a=>{const r=ROOMS.find(x=>x.ref===ALIAS[a]);return`<div class="row" style="align-items:center;justify-content:space-between"><span class="small"><b>${a}</b> → ${r?r.n:'?'}</span><button class="btn" data-del="${encodeURIComponent(a)}">Borrar</button></div>`}).join('')}</details>`}
+// ---------- phases
+function planUI(){S.phase='plan';
+  sheet.innerHTML=`<div class="tabs"><button class="btn pri" id="tabR">Ruta</button><button class="btn" id="tabE">Equipos</button></div>
+  <div class="field"><label for="qf">Estoy en</label><input id="qf" placeholder="Local, código de la placa (2-93-00-E) o toca el plano" value="${S.from?S.from.n:''}" class="${S.from?'ok':''}"></div>
+  <div class="field"><label for="qt">Voy a</label><input id="qt" placeholder="Destino: MSB, cuadro, puente, DG…" value="${S.to?S.to.n:''}" class="${S.to?'ok':''}"></div>
+  <div id="list"></div>
+  <div class="row"><button class="btn go" id="start" ${S.from&&S.to?'':'disabled'}>Empezar navegación</button></div>
+  <p class="hint">Para marcar tu posición sin buscar: elige la cubierta en la barra lateral, amplía y toca un punto del pasillo o del local donde estás. Las escalas aparecen como ▲ sube / ▼ baja.</p>
+  ${aliasesHTML()}${notesHTML()}`;
+  const bind=(id,key)=>{const inp=document.getElementById(id);inp.oninput=()=>{const L=matches(inp.value);const box=document.getElementById('list');box.innerHTML=resHTML(L);
+      if(!L.length&&inp.value.trim().length>=2)box.innerHTML=`<p class="hint">No encuentro «${inp.value.replace(/</g,'')}» en el plano. Escribe el nombre del local tal como está rotulado (p. ej. SWITCHBOARDS, GENERATOR, GALLEY) o en español (cuadro, generador, cocina). Al elegirlo, podrás guardar «${inp.value.replace(/</g,'')}» como tu nombre para ese local.</p>`;
+      if(!L.length)lastMiss=inp.value.trim()||lastMiss;
+      box.querySelectorAll('.res').forEach(b=>b.onclick=()=>{const r=L[+b.dataset.i];const miss=lastMiss;S[key]={nid:r.nid,n:r.n,d:r.d,ref:r.ref};planUI();
+        if(miss&&!r.alias&&!norm(r.n+' '+gloss(r.n)).includes(norm(miss))){lastMiss=miss;document.getElementById('list').innerHTML=aliasOffer(r);
+          const ok=document.getElementById('aok');if(ok){ok.onclick=()=>{ALIAS[miss]=r.ref;saveAlias();lastMiss='';planUI()};document.getElementById('ano').onclick=()=>{lastMiss='';document.getElementById('list').innerHTML=''}}}
+        const n=G.nodes[r.nid];show(r.d==='doublebottom'?'doublebottom':n.d,true);const [X,Y]=xy(r.d,r.fr,r.dy);centerOn(X,Y,.5,true);drawRoute()})}};
+  bind('qf','from');bind('qt','to');
+  document.getElementById('tabE').onclick=()=>eqUI();
+  sheet.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{delete ALIAS[decodeURIComponent(b.dataset.del)];saveAlias();planUI()});
+  document.getElementById('start').onclick=startNav;bindNotes()}
+let EQG=null;
+const GROUPS=[...new Set(EQ.map(e=>e.group))];
+function eqUI(){S.phase='plan';
+  const list=EQG?EQ.filter(e=>e.group===EQG):[];
+  sheet.innerHTML=`<div class="tabs"><button class="btn" id="tabR">Ruta</button><button class="btn pri" id="tabE">Equipos</button></div>
+  <div>${GROUPS.map((g,i)=>`<button class="chip" data-g="${i}" aria-pressed="${g===EQG}">${g} (${EQ.filter(e=>e.group===g).length})</button>`).join('')}</div>
+  <div id="eql">${EQG?list.map((e,i)=>{const n=eqNid(e)!=null?G.nodes[eqNid(e)]:null;return`<button class="res" data-e="${EQ.indexOf(e)}"><b>${e.tag}</b><small>${e.desc||''}<br>${n?`<span class="dk" style="background:${DK[n.d].color}"></span>${(e.room||'').replace('≈ ','≈')||'Punto '+e.code} · ${ENG.DECKNAME[n.d]}`:'Ubicación pendiente'} <span class="badge b-${e.conf}">${e.conf}</span></small></button>`}).join(''):'<p class="hint">Elige un sistema para ver sus equipos y su ubicación según el Ship Information Book.</p>'}</div>`;
+  document.getElementById('tabR').onclick=()=>planUI();
+  sheet.querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>{EQG=GROUPS[+b.dataset.g];eqUI()});
+  sheet.querySelectorAll('[data-e]').forEach(b=>b.onclick=()=>eqCard(EQ[+b.dataset.e]))}
+function eqCard(e){const nid=eqNid(e);const n=nid!=null?G.nodes[nid]:null;
+  sheet.innerHTML=`<div class="tabs"><button class="btn" id="tabR">Ruta</button><button class="btn pri" id="tabE">Equipos</button></div>
+  <h2>${e.tag}</h2><p class="hint" style="margin-top:0">${e.desc||''}</p>
+  <div class="say" style="border-color:${n?DK[n.d].color:'#999'}">${n?`<b>${e.room&&!e.room.startsWith('Pasillo')?e.room:'Punto '+(e.code||'')}</b><br>${ENG.DECKNAME[n.d]} · cuaderna ~${e.fr||Math.round(n.fr)} · ${e.side||ENG.sideOf(n.dy)}`:'El SIB no indica dónde está este equipo.'}${EQA[e.tag]!=null?'<br><i>Ubicación asignada por ti</i>':''}</div>
+  <p class="small">Sistema: ${e.group} · ${e.mod}<br>Código de compartimento: ${e.code||'—'} · Confianza: <span class="badge b-${e.conf}">${e.conf}</span><br>Fuente: ${e.src}${e.note?'<br>'+e.note:''}</p>
+  <div class="row">${n?'<button class="btn go" id="eqgo">Llévame aquí</button><button class="btn" id="eqsee">Ver en el plano</button>':''}<button class="btn" id="eqas">${n?'Corregir ubicación':'Asignar ubicación'}</button><button class="btn" id="eqb">Volver</button></div><div id="eqasbox"></div>`;
+  document.getElementById('tabR').onclick=()=>planUI();document.getElementById('tabE').onclick=()=>eqUI();document.getElementById('eqb').onclick=()=>eqUI();
+  if(n){document.getElementById('eqsee').onclick=()=>{show(n.d,true);const [X,Y]=xy(n.d,n.fr,n.dy);S.to={nid,n:e.tag,d:n.d};drawRoute();centerOn(X,Y,.6,true)};
+    document.getElementById('eqgo').onclick=()=>{S.to={nid,n:`${e.tag} (${e.room||ENG.DECKNAME[n.d]})`,d:n.d};if(S.from)startNav();else{planUI();sheet.insertAdjacentHTML('afterbegin','<div class="warn">Ahora indica dónde estás («Estoy en») y pulsa Empezar.</div>')}}}
+  document.getElementById('eqas').onclick=()=>{const box=document.getElementById('eqasbox');box.innerHTML='<div class="field"><input id="eqq" placeholder="Busca el local donde está el equipo"></div><div id="eqr"></div>';
+    const q=document.getElementById('eqq');q.focus();q.oninput=()=>{const L=matches(q.value).filter(r=>!r.eq);const bx=document.getElementById('eqr');bx.innerHTML=resHTML(L);
+      bx.querySelectorAll('.res').forEach(b=>b.onclick=()=>{EQA[e.tag]=L[+b.dataset.i].nid;saveEQA();eqCard(e)})}}}
+function startNav(){const P=ENG.path(G,S.from.nid,S.to.nid);if(!P){sheet.insertAdjacentHTML('afterbegin','<div class="warn">No encuentro una ruta entre esos dos puntos con el plano.</div>');return}
+  S.steps=ENG.steps(G,P,S.to.n);if(S.to.d==='doublebottom'){S.steps[S.steps.length-1].db=1}S.i=0;S.facing=null;S.phase='orient';S.needOrient=true;orientUI(true)}
+function orientUI(first){const d=G.nodes[S.steps[S.i].pts[0]].d;if(cur.key!==d)show(d,true);focusMe(true);drawRoute();
+  sheet.innerHTML=`<h2>${first?'Orientación inicial':'¿Hacia dónde miras ahora?'}</h2>
+  <p class="hint">${first?'Ponte de pie de cara a la <b>proa</b> del buque y pulsa «Miro a proa».':'Mira a tu alrededor y dime hacia dónde está mirando tu cara.'} Pistas: los números de cuaderna <b>aumentan hacia proa</b>; con la cara a proa, <b style="color:var(--port)">babor</b> queda a tu izquierda y <b style="color:var(--stbd)">estribor</b> a tu derecha. En el plano, la proa está arriba.</p>
+  <div class="compass"><button class="btn go" data-f="0">Miro a proa</button><button class="btn" data-f="2">Miro a popa</button><button class="btn" data-f="3" style="color:var(--port)">Miro a babor</button><button class="btn" data-f="1" style="color:var(--stbd)">Miro a estribor</button></div>
+  ${first?`<div class="toggles"><label><input type="checkbox" id="tv" ${S.voice?'checked':''}> Voz</label><label><input type="checkbox" id="ts" ${S.stepsOn?'checked':''}> Contar pasos</label></div>
+  <div class="warn">Ruta orientativa trazada sobre la Disposición General Rev. H. Respeta puertas estancas cerradas, zonas restringidas y permisos; si algo no coincide, anótalo con «Corregir».</div>`:''}`;
+  sheet.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{S.facing=+b.dataset.f;S.needOrient=false;S.phase='nav';navUI(true)});
+  const tv=document.getElementById('tv');if(tv)tv.onchange=()=>{S.voice=tv.checked;try{localStorage.setItem('avt-nav',JSON.stringify({voice:S.voice}))}catch(e){}};
+  const ts=document.getElementById('ts');if(ts)ts.onchange=async()=>{const ok=await enableSteps(ts.checked);if(ts.checked&&!ok){ts.checked=false;sheet.insertAdjacentHTML('beforeend','<div class="warn">El contador de pasos no está disponible aquí (el iPhone no da acceso al sensor en esta página). Avanza con «Hecho» en cada punto.</div>')}};
+  if(!first)speak('Al llegar, dime hacia dónde miras.')}
+const ARW={recto:0,derecha:90,izquierda:-90,'atrás':180};
+function arrowSVG(a){if(a==='sube'||a==='baja')return`<svg viewBox="0 0 80 80" aria-hidden="true"><rect x="4" y="4" width="72" height="72" rx="8" fill="var(--route)"/>${[0,1,2].map(i=>`<rect x="${20+i*12}" y="${a==='sube'?52-i*14:24+i*14}" width="28" height="6" fill="#fff"/>`).join('')}<path d="${a==='sube'?'M60 14 L60 34 M52 22 L60 14 L68 22':'M60 34 L60 14 M52 26 L60 34 L68 26'}" stroke="#fff" stroke-width="5" fill="none"/></svg>`;
+  if(a==='fin')return`<svg viewBox="0 0 80 80" aria-hidden="true"><circle cx="40" cy="40" r="36" fill="var(--hi)"/><path d="M24 41 L36 53 L58 28" stroke="#14284b" stroke-width="8" fill="none" stroke-linecap="round"/></svg>`;
+  const rot=typeof a==='number'?[0,90,180,-90][a]:ARW[a];
+  return`<svg viewBox="0 0 80 80" aria-hidden="true"><circle cx="40" cy="40" r="38" fill="var(--route)"/><g transform="rotate(${rot} 40 40)"><path d="M40 12 L62 40 L48 40 L48 66 L32 66 L32 40 L18 40 Z" fill="#fff"/></g></svg>`}
+function navUI(speakIt){S.phase='nav';const s=S.steps[S.i];const p=ENG.phrase(s,S.facing,G);
+  const d=G.nodes[s.pts[0]].d;if(cur.key!==d)show(d,true);S.base=S.count;drawRoute();focusMe(true);
+  const total=S.steps.length;let extra='';
+  if(s.kind==='arrive'&&s.db)extra='<div class="warn">El destino está en el doble fondo: el acceso es por registro desde esta plataforma, solo con permiso de trabajo y procedimiento de espacio confinado.</div>';
+  sheet.innerHTML=`<div class="cmd">${arrowSVG(p.arrow)}<div><div class="big">${p.short}</div><div class="sub">${p.sub}</div></div></div>
+  <div class="say">${p.say}</div>${extra}
+  ${s.kind==='walk'?`<div class="bar"><i id="pbar"></i></div><div class="small" id="pcount">${S.stepsOn?'0 pasos':'Pulsa «Hecho» al completar este tramo'}</div>`:''}
+  <div class="row">${s.kind==='arrive'?`<button class="btn go" id="fin">Terminar</button>`:`<button class="btn go" id="done">Hecho ✓</button>`}
+   <button class="btn" id="rep" aria-label="Repetir instrucción">🔊</button><button class="btn" id="back" ${S.i?'':'disabled'}>Atrás</button><button class="btn" id="lost">Estoy perdido</button></div>
+  <div class="row"><button class="btn" id="reo">Reorientar</button><button class="btn" id="fix">Corregir</button></div>
+  <p class="small">Paso ${S.i+1} de ${total} · destino: ${S.to.n}</p>`;
+  if(speakIt)speak(p.say);
+  const done=document.getElementById('done');if(done)done.onclick=()=>{S.facing=p.newFacing;S.i++;const nx=S.steps[S.i];
+    if(S.steps[S.i-1].kind==='lad'){S.facing=null;orientUI(false)}else navUI(true)};
+  const fin=document.getElementById('fin');if(fin)fin.onclick=()=>{S.from={nid:S.to.nid,n:S.to.n,d:S.to.d,ref:S.to.ref};S.to=null;S.steps=null;planUI();drawRoute()};
+  document.getElementById('rep').onclick=()=>speak(p.say);
+  document.getElementById('back').onclick=()=>{S.i=Math.max(0,S.i-1);S.facing=null;orientUI(false)};
+  document.getElementById('lost').onclick=()=>{S.steps=null;S.from=null;speechSynthesis&&speechSynthesis.cancel();planUI();drawRoute();
+    sheet.insertAdjacentHTML('afterbegin','<div class="warn">Busca la placa del local más cercano o un número de cuaderna, márcalo como «Estoy en» y pulsa «Empezar» otra vez. El destino se mantiene.</div>')};
+  document.getElementById('reo').onclick=()=>orientUI(false);
+  document.getElementById('fix').onclick=()=>{const t=prompt('Describe qué no coincide en este tramo (puerta cerrada, escala que no existe, otro camino…):');if(t){notes.push({t:new Date().toISOString().slice(0,16).replace('T',' '),paso:p.say,de:S.from.n,a:S.to.n,nota:t});saveNotes();alert('Corrección guardada en este móvil.')}}}
+function notesHTML(){if(!notes.length)return'';return`<details><summary>Correcciones anotadas (${notes.length})</summary><p class="hint">Cópialas y pégamelas en el chat para corregir el trazado.</p><textarea id="nt" readonly>${notes.map(n=>`[${n.t}] ${n.de} → ${n.a}\nPaso: ${n.paso}\nNota: ${n.nota}`).join('\n\n')}</textarea><div class="row"><button class="btn" id="ncp">Copiar</button><button class="btn" id="ncl">Borrar</button></div></details>`}
+function bindNotes(){const c=document.getElementById('ncp');if(c)c.onclick=()=>{const t=document.getElementById('nt');t.select();try{navigator.clipboard.writeText(t.value)}catch(e){document.execCommand('copy')}c.textContent='Copiado'};
+  const l=document.getElementById('ncl');if(l)l.onclick=()=>{if(confirm('¿Borrar todas las correcciones?')){notes=[];saveNotes();planUI()}}}
+if('speechSynthesis' in window)speechSynthesis.onvoiceschanged=()=>{};
+show('main');planUI();
+}
+const LS=(k,v)=>{try{if(v===undefined)return localStorage.getItem(k);if(v===null)localStorage.removeItem(k);else localStorage.setItem(k,v)}catch(e){return null}};
+async function unlock(pw,remember){const buf=new Uint8Array(await (await fetch('data.enc')).arrayBuffer());
+  const salt=buf.slice(0,16),iv=buf.slice(16,28),ct=buf.slice(28);
+  const base=await crypto.subtle.importKey('raw',new TextEncoder().encode(pw),'PBKDF2',false,['deriveKey']);
+  const key=await crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:250000,hash:'SHA-256'},base,{name:'AES-GCM',length:256},false,['decrypt']);
+  const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv},key,ct);const o=JSON.parse(new TextDecoder().decode(pt));
+  if(remember)LS('avt-pw',pw);document.getElementById('lock').remove();document.querySelector('main').style.display='';document.getElementById('sheet').style.display='';boot(o)}
+(function(){const f=document.getElementById('lockf'),m=document.getElementById('lockmsg');
+  if(!window.crypto||!crypto.subtle){m.textContent='Abre la app desde su dirección https o desde el icono de la pantalla de inicio.';return}
+  f.onsubmit=async e=>{e.preventDefault();m.textContent='Abriendo planos…';try{await unlock(document.getElementById('pw').value.trim(),document.getElementById('rem').checked)}catch(err){m.textContent='Contraseña incorrecta, o la app aún no está guardada en el móvil (ábrela una vez con internet).'}};
+  const s=LS('avt-pw');if(s)unlock(s,false).catch(()=>{LS('avt-pw',null);m.textContent='Introduce la contraseña.'})})();
+if('serviceWorker' in navigator&&location.protocol==='https:'){navigator.serviceWorker.register('sw.js').catch(()=>{})}
+</script>
+</body>
+</html>
