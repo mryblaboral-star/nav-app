@@ -1,0 +1,23 @@
+AVANTE 2200 · Navegador a bordo — app web instalable (uso personal)
+
+Los planos van CIFRADOS en data.enc (AES-256). Sin la contraseña nadie puede verlos,
+aunque el repositorio sea público. Contraseña: la que te dio Claude en el chat.
+
+1) PUBLICAR (una sola vez, gratis, desde el navegador)
+   - Entra en github.com y crea una cuenta si no tienes.
+   - Botón "New" > crea un repositorio (usa un nombre neutro, p. ej. "nav-app").
+   - "Add file" > "Upload files": sube TODOS los archivos de esta carpeta
+     (index.html, data.enc, sw.js, manifest.webmanifest, icon-192.png,
+     icon-512.png, apple-touch-icon.png). Pulsa "Commit changes".
+   - Settings > Pages > Source: "Deploy from a branch" > Branch: main / (root) > Save.
+   - Espera 1-2 minutos. Tu app queda en: https://TU-USUARIO.github.io/nav-app/
+
+2) INSTALAR EN EL IPHONE (con internet)
+   - Abre esa dirección en SAFARI.
+   - Compartir > "Añadir a pantalla de inicio" > Añadir.
+   - Abre la app desde el icono, escribe la contraseña (deja marcado "Recordar en este iPhone")
+     y espera a ver el plano: así queda guardada para usarla sin conexión.
+
+3) A BORDO SIN INTERNET
+   - Abre siempre desde el icono de la pantalla de inicio.
+   - Si llevas muchas semanas sin abrirla, ábrela una vez con internet antes de embarcar.
