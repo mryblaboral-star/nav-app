@@ -12,7 +12,6 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="theme-color" content="#14284b">
 <script>
-window.__errs=[];
 function __showErr(m){try{var b=document.getElementById('errbox');if(!b){b=document.createElement('div');b.id='errbox';b.style.cssText='position:fixed;left:8px;right:8px;bottom:8px;z-index:99999;background:#d93025;color:#fff;font:14px/1.4 -apple-system,system-ui,sans-serif;padding:10px 12px;border-radius:8px;max-height:45%;overflow:auto;white-space:pre-wrap';document.body.appendChild(b)}b.textContent='ERROR (haz captura y envíasela a Claude):\n'+m+'\n\n'+navigator.userAgent}catch(e){}}
 window.addEventListener('error',function(e){__showErr((e.message||e)+' @ línea '+(e.lineno||'?')+':'+(e.colno||'?'))});
 window.addEventListener('unhandledrejection',function(e){__showErr('Promesa: '+(e.reason&&(e.reason.stack||e.reason.message)||e.reason))});
@@ -89,7 +88,7 @@ textarea{width:100%;font:inherit;font-size:.85rem;min-height:5rem;background:var
 </style>
 </head>
 <body>
-<header><h1>AVANTE 2200 · Navegador <small style="font-weight:400;font-size:.7rem">v2</small></h1><span id="dname"></span></header>
+<header><h1>AVANTE 2200 · Navegador <small style="font-weight:400;font-size:.7rem">v2.1</small></h1><span id="dname"></span></header>
 <div id="lock" style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:24px;gap:12px;max-width:420px;margin:0 auto;width:100%">
 <img src="icon-192.png" alt="" width="72" height="72" style="border-radius:16px">
 <h2 style="font-size:1.3rem;margin:0">Navegador a bordo</h2>
@@ -134,21 +133,27 @@ function steps(G,P,dest){const N=G.nodes;const S=[];let cur=null;
   const T=[];for(const s of S){if(s.kind==='walk'&&s.dist<1.5&&T.length&&T[T.length-1].kind==='walk'&&T[T.length-1].deck===s.deck){T[T.length-1].pts.push(...s.pts.slice(1));T[T.length-1].toFr=s.toFr;T[T.length-1].toDy=s.toDy;T[T.length-1].door=s.door;continue}T.push(s)}
   T.push({kind:'arrive',deck:N[P[P.length-1].n].d,pts:[P[P.length-1].n],dest});return T}
 // Phrase a step given current facing (0..3 or null). returns {say, short, arrow, newFacing}
-function phrase(st,facing,G){const f=n=>Math.round(n);
-  if(st.kind==='walk'){const fr=Math.max(1,Math.round(Math.abs(st.toFr-st.fromFr)));const m=Math.max(1,Math.round(st.dist));const pasos=Math.max(2,Math.round(st.dist/0.7));
+function phrase(st,facing,G){const f=n=>Math.round(n);const lm=st.lm||{};
+  const list=a=>a.length<=1?(a[0]||''):a.slice(0,-1).join(', ')+' y '+a[a.length-1];
+  if(st.kind==='walk'){const m=Math.max(1,Math.round(st.dist));const pasos=Math.max(2,Math.round(st.dist/0.7));
     const dir=HEAD[st.head];let lead='';let arrow=st.head;
     if(facing!=null){const t=turn(facing,st.head);arrow=t===null?'recto':t;lead=t===null?'Sigue recto':t==='atrás'?'Da media vuelta':'Gira a la '+t}
-    const along=(st.head===0||st.head===2)?`unas ${fr} cuadernas`:`unos ${m} metros`;
-    const end=st.door?' hasta la puerta del local':(st.head===0||st.head===2)?` hasta la cuaderna ${f(st.toFr)}`:'';
-    let say;
-    if(st.dist<2){say=(lead?lead+' y avanza':'Avanza')+` un par de pasos hacia ${dir}${st.door?' hasta la puerta del local':''}.`}
-    else{const amt=(st.head===0||st.head===2)?along:(m===1?'un metro':`unos ${m} metros`);say=(lead?lead+' y camina':'Camina')+` hacia ${dir} ${amt}${end} (unos ${pasos} pasos).`}
-    if(st.exit)say='Sal del local. '+say;
-    return{say,short:(lead||('Hacia '+dir)),sub:`Hacia ${dir} · ${m} m · ~${pasos} pasos`,arrow,newFacing:st.head}}
-  if(st.kind==='lad'){const v=st.up?'Sube':'Baja';const say=st.virt?`${v} a ${DECKNAME[st.to]} por el acceso de la zona, cerca de la cuaderna ${f(st.fr)}. El plano no marca esta escala: confírmala a bordo. Al llegar, dime hacia dónde miras.`
-      :`${v} por la escala de la cuaderna ${f(st.fr)}, ${sideOf(st.dy)}, hasta ${DECKNAME[st.to]}. Al llegar, dime hacia dónde miras.`;
-    return{say,short:v+' a '+DECKNAME[st.to],sub:`Escala cuad. ${f(st.fr)} · ${sideOf(st.dy)}`,arrow:st.up?'sube':'baja',newFacing:null}}
+    let parts=[];
+    if(st.exit)parts.push(lm.exitDoor?`Sal del local por la puerta ${lm.exitDoor}.`:'Sal del local.');
+    const go=(lead?lead+' y ':'')+(st.dist<2?'avanza un par de pasos':'camina')+` hacia ${dir}`;
+    let s=go+(lm.pas?` por el ${lm.pas}`:'');
+    if(lm.door)s+=`, cruzando la puerta ${lm.door}`;
+    if(lm.via&&lm.via.length)s+=`, pasando junto a ${list(lm.via)}`;
+    if(st.door&&lm.dest)s+=`, hasta la puerta de ${lm.dest}`;else if(lm.end)s+=`, hasta ${lm.end}`;
+    s+=st.dist<2?'.':` (unos ${pasos} pasos).`;parts.push(s.charAt(0).toUpperCase()+s.slice(1));
+    if(lm.last&&lm.dest){const n=(lm.via||[]).length;parts.push(n?`Estás llegando: ${lm.dest} está después de ${n===1?'ese local':'esos '+n+' locales'}.`:`Estás llegando: ${lm.dest} está justo ahí.`)}
+    return{say:parts.join(' '),short:(lead||('Hacia '+dir)),sub:`Hacia ${dir} · ${m} m · ~${pasos} pasos`,arrow,newFacing:st.head,stops:(lm.via||[]).concat(lm.last&&lm.dest?[lm.dest]:(lm.end?[lm.end]:[]))}}
+  if(st.kind==='lad'){const v=st.up?'Sube':'Baja';const near=lm.near?` que está junto a ${lm.near}`:'';
+    const say=st.virt?`${v} a ${DECKNAME[st.to]} por el acceso de esta zona${near}. El plano no marca bien esta escala: confírmala a bordo. Al llegar, dime hacia dónde miras.`
+      :`${v} por la escala${near} hasta ${DECKNAME[st.to]}. Al llegar, dime hacia dónde miras.`;
+    return{say,short:v+' a '+DECKNAME[st.to].replace(/ \(.*\)/,''),sub:lm.near?`Escala junto a ${lm.near}`:`Escala · ${sideOf(st.dy)}`,arrow:st.up?'sube':'baja',newFacing:null}}
   if(st.kind==='arrive'){return{say:`Has llegado a ${st.dest}.`,short:'Has llegado',sub:st.dest,arrow:'fin',newFacing:facing}}}
+
 return{build,path,steps,phrase,DECKNAME,LVL,HEAD,sideOf};})();
 
 
@@ -326,8 +331,34 @@ function eqCard(e){const nid=eqNid(e);const n=nid!=null?G.nodes[nid]:null;
   document.getElementById('eqas').onclick=()=>{const box=document.getElementById('eqasbox');box.innerHTML='<div class="field"><input id="eqq" placeholder="Busca el local donde está el equipo"></div><div id="eqr"></div>';
     const q=document.getElementById('eqq');q.focus();q.oninput=()=>{const L=matches(q.value).filter(r=>!r.eq);const bx=document.getElementById('eqr');bx.innerHTML=resHTML(L);
       bx.querySelectorAll('.res').forEach(b=>b.onclick=()=>{EQA[e.tag]=L[+b.dataset.i].nid;saveEQA();eqCard(e)})}}}
+const LMBAD=/TK\.|TANK|VOID|^AT |MTU|Motor principal|Diésel generador|CASING|PLATFORM$|OPENING|CUT ON|BALLAST|DFM|SLUDGE|JP-5|^\(|^No\.\d+ |SEA CHEST|MVZ/i;
+const PASRE=/PASSAGEWAY|CORRIDOR/i;
+const sanit=n=>{if(/^Local \d/.test(n||''))return'';let s=String(n||'').replace(/-?\bP\.?A\.?N?\.?(?=\s|$)/g,'').replace(/[—_|\\]+/g,' ').replace(/(\w)- (\w)/g,'$1-$2');s=s.split(/\s+/).filter(w=>w&&!/^(WT|FT|GT|AT|PA|P\.A|M\.J|COA|L\.W\.S)\b|^[A-Z]-\d+$|^\W+$/.test(w)&&!/^[A-Z]{1,2}\.$/.test(w)).join(' ').replace(/(\w)- (\w)/g,'$1-$2').trim();return s.length>=4?s:''};
+const LMS={};PLANKEYS.forEach(d=>{LMS[d]=[]});
+PLANKEYS.forEach(d=>{(DK[d].items||[]).forEach(it=>{if(it.fr!=null&&!LMBAD.test(it.n))LMS[d].push({n:it.n,fr:it.fr,dy:it.dy})})});
+Object.values(CAPN).forEach(c=>{const n=sanit(c.n);if(LMS[c.d]&&n&&!LMBAD.test(n)&&!LMS[c.d].some(x=>x.n===n&&Math.abs(x.fr-c.fr)<3))LMS[c.d].push({n,fr:c.fr,dy:c.dy,code:c.code})});
+const DOORS=(P.DOORS||[]);
+const mxy=(fr,dy)=>[fr*0.67,dy*0.0529];
+function proj(pt,P){let best=null,acc=0;for(let i=1;i<P.length;i++){const[ax,ay]=P[i-1],[bx,by]=P[i];const vx=bx-ax,vy=by-ay,L2=vx*vx+vy*vy,L=Math.sqrt(L2)||1;
+  let t=L2?((pt[0]-ax)*vx+(pt[1]-ay)*vy)/L2:0;t=Math.max(0,Math.min(1,t));const cx=ax+t*vx,cy=ay+t*vy;const d=Math.hypot(pt[0]-cx,pt[1]-cy);
+  if(!best||d<best.d)best={d,s:acc+t*L};acc+=L}return Object.assign(best||{d:1e9,s:0},{len:acc})}
+function nearLM(d,fr,dy,maxm,skip){let b=null;(LMS[d]||[]).forEach(l=>{if(skip&&skip.includes(l.n))return;const dd=Math.hypot((l.fr-fr)*0.67,(l.dy-dy)*0.0529);if(dd<=maxm&&(!b||dd<b[0]))b=[dd,l.n]});return b?b[1]:''}
+function nearDoor(d,fr,dy,maxm){let b=null;DOORS.forEach(o=>{if(o.d!==d)return;const dd=Math.hypot((o.fr-fr)*0.67,(o.dy-dy)*0.0529);if(dd<=maxm&&(!b||dd<b[0]))b=[dd,o]});return b?b[1]:null}
+const clean=n=>String(n||'').replace(/\s*\(.*?\)\s*$/,'').trim();
+function annotate(steps,destName,fromName){const ex=[clean(fromName),clean(destName)];const N=G.nodes;let lastWalk=-1;steps.forEach((s,i)=>{if(s.kind==='walk')lastWalk=i});
+  steps.forEach((s,i)=>{const lm={};s.lm=lm;const a=N[s.pts[0]];const d=a.d;
+    if(s.kind==='walk'){const P=s.pts.map(n=>mxy(N[n].fr,N[n].dy));const via=[];let pas='',pasBest=9;
+      (LMS[d]||[]).map(l=>({l,p:proj(mxy(l.fr,l.dy),P)})).filter(o=>o.p.d<=3.2&&o.p.s>1&&o.p.s<o.p.len-0.6).sort((x,y)=>x.p.s-y.p.s).forEach(o=>{
+        if(PASRE.test(o.l.n)){if(o.p.d<pasBest){pasBest=o.p.d;pas='pasillo '+(o.l.code||o.l.n.toLowerCase().replace('passageway','').trim()||'').trim()}return}
+        if(ex.includes(o.l.n))return;if(via.length&&via[via.length-1]===o.l.n)return;if(!via.includes(o.l.n))via.push(o.l.n)});
+      lm.via=via.length>3?[via[0],via[Math.floor(via.length/2)],via[via.length-1]]:via;lm.pas=pas.replace(/pasillo $/,'pasillo');
+      const e=N[s.pts[s.pts.length-1]];if(!s.door){const en=nearLM(d,e.fr,e.dy,3.5,lm.via.concat(ex));lm.end=PASRE.test(en)?'':en}
+      const dn=s.pts.map(n=>N[n]).find(n=>n.k==='door');if(dn)lm.door=(dn.wt?'estanca ':'')+String(dn.ref||'').replace('door:','');
+      if(s.exit){const o=nearDoor(d,a.fr,a.dy,4.5);if(o)lm.exitDoor=o.id}
+      if(i===lastWalk){lm.last=true;lm.dest=clean(destName)}}
+    else if(s.kind==='lad'){lm.near=nearLM(d,a.fr,a.dy,4)}});return steps}
 function startNav(){const P=ENG.path(G,S.from.nid,S.to.nid);if(!P){sheet.insertAdjacentHTML('afterbegin','<div class="warn">No encuentro una ruta entre esos dos puntos con el plano.</div>');return}
-  S.steps=ENG.steps(G,P,S.to.n);if(S.to.d==='doublebottom'){S.steps[S.steps.length-1].db=1}S.i=0;S.facing=null;S.phase='orient';S.needOrient=true;orientUI(true)}
+  S.steps=annotate(ENG.steps(G,P,S.to.n),S.to.n,S.from&&S.from.n);if(S.to.d==='doublebottom'){S.steps[S.steps.length-1].db=1}S.i=0;S.facing=null;S.phase='orient';S.needOrient=true;orientUI(true)}
 function orientUI(first){const d=G.nodes[S.steps[S.i].pts[0]].d;if(cur.key!==d)show(d,true);focusMe(true);drawRoute();
   sheet.innerHTML=`<h2>${first?'Orientación inicial':'¿Hacia dónde miras ahora?'}</h2>
   <p class="hint">${first?'Ponte de pie de cara a la <b>proa</b> del buque y pulsa «Miro a proa».':'Mira a tu alrededor y dime hacia dónde está mirando tu cara.'} Pistas: los números de cuaderna <b>aumentan hacia proa</b>; con la cara a proa, <b style="color:var(--port)">babor</b> queda a tu izquierda y <b style="color:var(--stbd)">estribor</b> a tu derecha. En el plano, la proa está arriba.</p>
@@ -348,7 +379,7 @@ function navUI(speakIt){S.phase='nav';const s=S.steps[S.i];const p=ENG.phrase(s,
   const total=S.steps.length;let extra='';
   if(s.kind==='arrive'&&s.db)extra='<div class="warn">El destino está en el doble fondo: el acceso es por registro desde esta plataforma, solo con permiso de trabajo y procedimiento de espacio confinado.</div>';
   sheet.innerHTML=`<div class="cmd">${arrowSVG(p.arrow)}<div><div class="big">${p.short}</div><div class="sub">${p.sub}</div></div></div>
-  <div class="say">${p.say}</div>${extra}
+  <div class="say">${p.say}</div>${p.stops&&p.stops.length?`<p class="small" style="margin:.2rem 0">Paradas: ${p.stops.map((x,k)=>k===p.stops.length-1?'<b>'+x+'</b>':x).join(' → ')}</p>`:''}${extra}
   ${s.kind==='walk'?`<div class="bar"><i id="pbar"></i></div><div class="small" id="pcount">${S.stepsOn?'0 pasos':'Pulsa «Hecho» al completar este tramo'}</div>`:''}
   <div class="row">${s.kind==='arrive'?`<button class="btn go" id="fin">Terminar</button>`:`<button class="btn go" id="done">Hecho ✓</button>`}
    <button class="btn" id="rep" aria-label="Repetir instrucción">🔊</button><button class="btn" id="back" ${S.i?'':'disabled'}>Atrás</button><button class="btn" id="lost">Estoy perdido</button></div>
@@ -371,11 +402,16 @@ if('speechSynthesis' in window)speechSynthesis.onvoiceschanged=()=>{};
 show('main');planUI();
 }
 const LS=(k,v)=>{try{if(v===undefined)return localStorage.getItem(k);if(v===null)localStorage.removeItem(k);else localStorage.setItem(k,v)}catch(e){return null}};
-async function unlock(pw,remember){const buf=new Uint8Array(await (await fetch('data.enc')).arrayBuffer());
+async function getData(){const r=await fetch('data.enc?v='+Date.now(),{cache:'no-store'});return new Uint8Array(await r.arrayBuffer())}
+async function purgeOld(){try{if(window.caches){const ks=await caches.keys();await Promise.all(ks.map(k=>caches.delete(k)))}}catch(e){}try{if(navigator.serviceWorker){const rs=await navigator.serviceWorker.getRegistrations();await Promise.all(rs.map(r=>r.unregister()))}}catch(e){}}
+async function unlock(pw,remember,again){const buf=await getData();
   const salt=buf.slice(0,16),iv=buf.slice(16,28),ct=buf.slice(28);
   const base=await crypto.subtle.importKey('raw',new TextEncoder().encode(pw),'PBKDF2',false,['deriveKey']);
   const key=await crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:250000,hash:'SHA-256'},base,{name:'AES-GCM',length:256},false,['decrypt']);
   const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv},key,ct);const o=JSON.parse(new TextDecoder().decode(pt));
+  if(!o.META||!o.DOORS){if(!navigator.onLine)throw new Error('Hace falta internet una vez para actualizar los planos.');if(!again){document.getElementById('lockmsg').textContent='Actualizando los planos a la versión nueva…';await purgeOld();return unlock(pw,remember,true)}
+    if(!sessionStorage.getItem('avt-rl')){sessionStorage.setItem('avt-rl','1');location.reload();return}
+    throw new Error('El móvil sigue usando los planos antiguos. Ábrela con internet y vuelve a intentarlo.')}
   if(remember)LS('avt-pw',pw);document.getElementById('lock').remove();document.querySelector('main').style.display='';document.getElementById('sheet').style.display='';try{boot(o)}catch(err){__showErr((err&&err.stack)||String(err))}}
 (function(){const f=document.getElementById('lockf'),m=document.getElementById('lockmsg');
   if(!window.crypto||!crypto.subtle){m.textContent='Abre la app desde su dirección https o desde el icono de la pantalla de inicio.';return}
