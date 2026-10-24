@@ -90,7 +90,7 @@ textarea{width:100%;font:inherit;font-size:.85rem;min-height:5rem;background:var
 </style>
 </head>
 <body>
-<header><h1>AVANTE 2200 · Navegador <small style="font-weight:400;font-size:.7rem">v3</small></h1><span id="dname"></span></header>
+<header><h1>AVANTE 2200 · Navegador <small style="font-weight:400;font-size:.7rem">v3.1</small></h1><span id="dname"></span></header>
 <div id="lock" style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:24px;gap:12px;max-width:420px;margin:0 auto;width:100%">
 <img src="icon-192.png" alt="" width="72" height="72" style="border-radius:16px">
 <h2 style="font-size:1.3rem;margin:0">Navegador a bordo</h2>
@@ -475,23 +475,32 @@ const ESR=[[/cuadro principal (?:numero |n )?(\d)|\bmsb ?-? ?(\d)/,'eq',d=>'MSB-
  [/\bcic\b|centro de combate|centro de informacion/,'q',()=>'C.I.C.','CIC'],[/radio/,'q',()=>'RADIO ROOM','radio'],[/redes/,'q',()=>'NETWORKS','redes'],[/giroscop/,'q',()=>'GYRO','giroscópicas'],
  [/agua nebulizada/,'q',()=>'WATERMIST','agua nebulizada'],[/(?:toma|conexion) de tierra (?:de )?babor/,'q',()=>'PORT SHORE','conexión de tierra de babor'],[/(?:toma|conexion) de tierra (?:de )?estribor/,'q',()=>'STARBOARD SHORE','conexión de tierra de estribor'],
  [/lancha|bote/,'q',()=>'LEVEL 02 OPEN DECK','cubierta 02']];
-function normEs(s){s=norm(s).replace(/\b(numero|num|nro)\b/g,'numero');return s.split(' ').map(w=>NUMW[w]!=null?String(NUMW[w]):w).join(' ').replace(/(\d) (\d)/g,'$1$2')}
+function normEs(s){s=norm(String(s||'').replace(/[.,;:!?¿¡"“”]/g,' ')).replace(/\b(numero|num|nro)\b/g,'numero');return s.split(' ').map(w=>NUMW[w]!=null?String(NUMW[w]):w).join(' ').replace(/(\d) (\d)/g,'$1$2')}
 function pickByNum(list,d){if(!d)return list[0];const re=new RegExp('(No\\.?|N[º°o]\\.?)\\s*'+d+'\\b','i');return list.find(r=>re.test(r.n))||list[0]}
 function understand(phrase){const t=normEs(phrase);if(!t)return null;
   for(const[rx,kind,f,lab]of ESR){const m=t.match(rx);if(!m)continue;const d=(m.slice(1).find(x=>x)||'');const q=f(d);
     if(kind==='eq'){const e=EQ.find(x=>x.tag===q);if(e&&eqNid(e)!=null){const n=G.nodes[eqNid(e)];return{nid:eqNid(e),n:`${e.tag} (${e.room||ENG.DECKNAME[n.d]})`,d:n.d,lab:lab.replace('$',d)}}continue}
-    let L=matches(q).filter(r=>!r.approx);if(/GENERATOR|ENGINE ROOM|AUXILIARY/.test(q)){const tt=L.filter(r=>r.d==='toptanks');if(tt.length)L=tt}
+    let L=matches(q).filter(r=>!r.approx);const nq=norm(q);const ex=L.filter(r=>norm(r.n).includes(nq));if(ex.length)L=ex;if(/GENERATOR|ENGINE ROOM|AUXILIARY/.test(q)){const tt=L.filter(r=>r.d==='toptanks');if(tt.length)L=tt}
     const r=pickByNum(L,d);if(r)return Object.assign({},r,{lab:lab.replace('$',d)})}
   const L=matches(phrase);return L.length?Object.assign({},L[0],{lab:phrase}):null}
-function splitOD(t){t=normEs(t);let m=t.match(/(?:estoy en|estoy|desde|salgo de|saliendo de)\s+(.*?)\s*(?:\by\b\s*)?(?:quiero ir|necesito ir|tengo que ir|voy|ir|llevame|hasta)\s+(?:a la |al |a |hasta )?(.+)$/);
+function splitOD(t){t=normEs(t);let m=t.match(/(?:estoy en|estoy|desde|salgo de|saliendo de)\s+(.*?)\s*(?:\by\b\s*)?(?:quiero ir|quiero llegar|necesito ir|necesito llegar|tengo que ir|quisiera ir|deseo ir|me quiero ir|voy|ir|llegar|llevame|hasta|dirigirme)\s+(?:hacia |a la |al |a |hasta )?(.+)$/);
   if(m)return{o:m[1],d:m[2]};m=t.match(/(?:quiero ir|necesito ir|tengo que ir|voy|llevame|ir)\s+(?:a la |al |a |hasta )?(.+)$/);if(m)return{o:null,d:m[1]};
   m=t.match(/(?:estoy en|estoy)\s+(.+)$/);if(m)return{o:m[1],d:null};return{o:null,d:t}}
+function findPlaces(txt){const t=normEs(txt);const hits=[];const used=[];
+  ESR.forEach(([rx])=>{const g=new RegExp(rx.source,'g');let m;while((m=g.exec(t))){const s=m.index,e=s+m[0].length;if(used.some(([a,b])=>s<b&&e>a))continue;used.push([s,e]);const r=understand(m[0]);if(r)hits.push({s,r,ctx:t.slice(Math.max(0,s-14),s)})}});
+  return hits.sort((a,b)=>a.s-b.s)}
+function parseOD(txt){const t=normEs(txt);const H=findPlaces(txt);
+  if(H.length>=2){let o=H[0],d=H[H.length-1];if(/\b(hasta|ir a|ir al|llegar a|llegar al|voy a|voy al)\s*$/.test(o.ctx)&&/\b(desde|estoy en|estoy)\b/.test(d.ctx)){[o,d]=[d,o]}return{o:o.r,d:d.r}}
+  if(H.length===1){const h=H[0];const isO=/\b(estoy en|estoy en el|estoy en la|desde|salgo de)\s*(el |la )?$/.test(t.slice(0,h.s));
+    if(isO){const od=splitOD(txt);return{o:h.r,d:od.d&&od.d!==od.o?understand(od.d):null}}
+    const od=splitOD(txt);return{o:od.o?understand(od.o):null,d:h.r}}
+  const od=splitOD(txt);return{o:od.o?understand(od.o):null,d:od.d?understand(od.d):null}}
 function voiceUI(){S.phase='plan';const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
   sheet.innerHTML=`<h2>🎤 Dímelo en español</h2><p class="hint" style="margin-top:0">Toca la casilla, pulsa el <b>micrófono del teclado</b> y di, por ejemplo: <i>«Estoy en la cocina y quiero ir al cuadro principal uno»</i>.</p>
   <div class="field"><textarea id="vtx" rows="3" style="width:100%;font-size:1rem" placeholder="Estoy en… y quiero ir a…"></textarea></div>
   <div class="row"><button class="btn go" id="vgo">Entender</button>${SR?'<button class="btn" id="vlisten">🎙 Escuchar</button>':''}<button class="btn" id="vback">Volver</button></div><div id="vres"></div>`;
   document.getElementById('vback').onclick=()=>planUI();
-  const run=()=>{const txt=document.getElementById('vtx').value;const od=splitOD(txt);const o=od.o?understand(od.o):null;const d=od.d?understand(od.d):null;const out=document.getElementById('vres');
+  const run=()=>{const txt=document.getElementById('vtx').value;const od=parseOD(txt);od.o=od.o||null;const o=od.o,d=od.d;const out=document.getElementById('vres');
     if(!o&&!d){out.innerHTML='<div class="warn">No te he entendido. Prueba con «Estoy en … y quiero ir a …».</div>';speak('No te he entendido.');return}
     const line=(lab,r)=>r?`<b>${clean(r.n)}</b> <span class="small">(${r.lab})</span>`:'<i>no indicado: márcalo tú</i>';
     out.innerHTML=`<div class="say">Desde: ${od.o?line('',o):(S.from?'<b>'+clean(S.from.n)+'</b> <span class="small">(posición actual)</span>':'<i>no indicado</i>')}<br>Hasta: ${line('',d)}</div><div class="row"><button class="btn go" id="vyes">Sí, es correcto</button><button class="btn" id="vno">Corregir</button></div>`;
