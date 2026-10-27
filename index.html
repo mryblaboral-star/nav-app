@@ -110,7 +110,7 @@ body.navmode #alertb{top:calc(env(safe-area-inset-top,0px) + 150px)}
 </style>
 </head>
 <body>
-<header><h1>AVANTE 2200 · Navegador <small style="font-weight:400;font-size:.7rem">v3.4</small></h1><span id="dname"></span></header>
+<header><h1>AVANTE 2200 · Navegador <small style="font-weight:400;font-size:.7rem">v4.0</small></h1><span id="dname"></span></header>
 <div id="lock" style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:24px;gap:12px;max-width:420px;margin:0 auto;width:100%">
 <img src="icon-192.png" alt="" width="72" height="72" style="border-radius:16px">
 <h2 style="font-size:1.3rem;margin:0">Navegador a bordo</h2>
@@ -316,7 +316,8 @@ function aliasOffer(r){if(!lastMiss||norm(lastMiss)===norm(r.n)||r.alias)return'
 function aliasesHTML(){const k=Object.keys(ALIAS);if(!k.length)return'';return`<details><summary>Mis nombres (${k.length})</summary>${k.map(a=>{const r=ROOMS.find(x=>x.ref===ALIAS[a]);return`<div class="row" style="align-items:center;justify-content:space-between"><span class="small"><b>${a}</b> → ${r?r.n:'?'}</span><button class="btn" data-del="${encodeURIComponent(a)}">Borrar</button></div>`}).join('')}</details>`}
 // ---------- phases
 function planUI(){S.phase='plan';if(document.body.classList.contains('navmode'))exitNav();
-  sheet.innerHTML=`<div class="tabs"><button class="btn pri" id="tabR">Ruta</button><button class="btn" id="tabE">Equipos</button></div>
+  sheet.innerHTML=`<div class="tabs"><button class="btn pri" id="tabR">Ruta</button><button class="btn" id="tabM">Mis rutas</button><button class="btn" id="tabE">Equipos</button></div>
+  <label class="small" style="display:flex;gap:6px;align-items:center;margin:0 0 .4rem"><input type="checkbox" id="obra" ${OBRA?'checked':''}> <b>Modo obra</b> (buque en construcción: instrucciones contando puertas, cruces y escalas)</label>
   <button class="btn pri bigb" id="voice">🎤 Toca y habla</button>
   ${favsHTML()}<div class="field"><label for="qf">Estoy en</label><input id="qf" placeholder="Local, código de la placa (2-93-00-E) o toca el plano" value="${S.from?S.from.n:''}" class="${S.from?'ok':''}"></div>
   <div class="field"><label for="qt">Voy a</label><input id="qt" placeholder="Destino: MSB, cuadro, puente, DG…" value="${S.to?S.to.n:''}" class="${S.to?'ok':''}"></div>
@@ -332,7 +333,8 @@ function planUI(){S.phase='plan';if(document.body.classList.contains('navmode'))
           const ok=document.getElementById('aok');if(ok){ok.onclick=()=>{ALIAS[miss]=r.ref;saveAlias();lastMiss='';planUI()};document.getElementById('ano').onclick=()=>{lastMiss='';document.getElementById('list').innerHTML=''}}}
         const n=G.nodes[r.nid];show(r.d==='doublebottom'?'doublebottom':n.d,true);const [X,Y]=xy(r.d,r.fr,r.dy);centerOn(X,Y,.5,true);drawRoute()})}};
   bind('qf','from');bind('qt','to');
-  document.getElementById('tabE').onclick=()=>eqUI();
+  document.getElementById('tabE').onclick=()=>eqUI();document.getElementById('tabM').onclick=()=>myRoutesUI();
+  document.getElementById('obra').onchange=e=>{OBRA=e.target.checked;try{localStorage.setItem('avt-obra',OBRA?'1':'0')}catch(x){}};
   document.getElementById('voice').onclick=()=>voiceQuick();bindFavs();
   sheet.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{delete ALIAS[decodeURIComponent(b.dataset.del)];saveAlias();planUI()});
   document.getElementById('start').onclick=startNav;bindNotes()}
@@ -340,19 +342,19 @@ let EQG=null;
 const GROUPS=[...new Set(EQ.map(e=>e.group))];
 function eqUI(){S.phase='plan';if(document.body.classList.contains('navmode'))exitNav();
   const list=EQG?EQ.filter(e=>e.group===EQG):[];
-  sheet.innerHTML=`<div class="tabs"><button class="btn" id="tabR">Ruta</button><button class="btn pri" id="tabE">Equipos</button></div>
+  sheet.innerHTML=`<div class="tabs"><button class="btn" id="tabR">Ruta</button><button class="btn" id="tabM">Mis rutas</button><button class="btn pri" id="tabE">Equipos</button></div>
   <div>${GROUPS.map((g,i)=>`<button class="chip" data-g="${i}" aria-pressed="${g===EQG}">${g} (${EQ.filter(e=>e.group===g).length})</button>`).join('')}</div>
   <div id="eql">${EQG?list.map((e,i)=>{const n=eqNid(e)!=null?G.nodes[eqNid(e)]:null;return`<button class="res" data-e="${EQ.indexOf(e)}"><b>${e.tag}</b><small>${e.desc||''}<br>${n?`<span class="dk" style="background:${DK[n.d].color}"></span>${(e.room||'').replace('≈ ','≈')||'Punto '+e.code} · ${ENG.DECKNAME[n.d]}`:'Ubicación pendiente'} <span class="badge b-${e.conf}">${e.conf}</span></small></button>`}).join(''):'<p class="hint">Elige un sistema para ver sus equipos y su ubicación según el Ship Information Book.</p>'}</div>`;
-  document.getElementById('tabR').onclick=()=>planUI();
+  document.getElementById('tabR').onclick=()=>planUI();document.getElementById('tabM').onclick=()=>myRoutesUI();
   sheet.querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>{EQG=GROUPS[+b.dataset.g];eqUI()});
   sheet.querySelectorAll('[data-e]').forEach(b=>b.onclick=()=>eqCard(EQ[+b.dataset.e]))}
 function eqCard(e){const nid=eqNid(e);const n=nid!=null?G.nodes[nid]:null;
-  sheet.innerHTML=`<div class="tabs"><button class="btn" id="tabR">Ruta</button><button class="btn pri" id="tabE">Equipos</button></div>
+  sheet.innerHTML=`<div class="tabs"><button class="btn" id="tabR">Ruta</button><button class="btn" id="tabM">Mis rutas</button><button class="btn pri" id="tabE">Equipos</button></div>
   <h2>${e.tag}</h2><p class="hint" style="margin-top:0">${e.desc||''}</p>
   <div class="say" style="border-color:${n?DK[n.d].color:'#999'}">${n?`<b>${e.room&&!e.room.startsWith('Pasillo')?e.room:'Punto '+(e.code||'')}</b><br>${ENG.DECKNAME[n.d]} · cuaderna ~${e.fr||Math.round(n.fr)} · ${e.side||ENG.sideOf(n.dy)}`:'El SIB no indica dónde está este equipo.'}${EQA[e.tag]!=null?'<br><i>Ubicación asignada por ti</i>':''}</div>
   <p class="small">Sistema: ${e.group} · ${e.mod}<br>Código de compartimento: ${e.code||'—'} · Confianza: <span class="badge b-${e.conf}">${e.conf}</span><br>Fuente: ${e.src}${e.note?'<br>'+e.note:''}</p>
   <div class="row">${n?'<button class="btn go" id="eqgo">Llévame aquí</button><button class="btn" id="eqsee">Ver en el plano</button>':''}<button class="btn" id="eqas">${n?'Corregir ubicación':'Asignar ubicación'}</button><button class="btn" id="eqb">Volver</button></div><div id="eqasbox"></div>`;
-  document.getElementById('tabR').onclick=()=>planUI();document.getElementById('tabE').onclick=()=>eqUI();document.getElementById('eqb').onclick=()=>eqUI();
+  document.getElementById('tabR').onclick=()=>planUI();document.getElementById('tabM').onclick=()=>myRoutesUI();document.getElementById('tabE').onclick=()=>eqUI();document.getElementById('eqb').onclick=()=>eqUI();
   if(n){document.getElementById('eqsee').onclick=()=>{show(n.d,true);const [X,Y]=xy(n.d,n.fr,n.dy);S.to={nid,n:e.tag,d:n.d};drawRoute();centerOn(X,Y,.6,true)};
     document.getElementById('eqgo').onclick=()=>{S.to={nid,n:`${e.tag} (${e.room||ENG.DECKNAME[n.d]})`,d:n.d};if(S.from)startNav();else{planUI();sheet.insertAdjacentHTML('afterbegin','<div class="warn">Ahora indica dónde estás («Estoy en») y pulsa Empezar.</div>')}}}
   document.getElementById('eqas').onclick=()=>{const box=document.getElementById('eqasbox');box.innerHTML='<div class="field"><input id="eqq" placeholder="Busca el local donde está el equipo"></div><div id="eqr"></div>';
@@ -395,14 +397,14 @@ function safeW(u,v,c,ty){const N=G.nodes;let w=c;if(N[v].k==='door'&&N[v].wt)w+=
 function routeMetrics(P){const N=G.nodes;let m=0,lad=0,wt=0;for(let i=1;i<P.length;i++){const a=N[P[i-1].n],b=N[P[i].n];if(P[i].via==='v'){lad++;continue}m+=Math.hypot((b.fr-a.fr)*.67,(b.dy-a.dy)*.0529);if(b.k==='door'&&b.wt)wt++}
   return{m:Math.round(m),lad,wt,sec:Math.round(m/WALK+lad*TLAD+wt*TWT)}}
 function buildStops(steps,destName){const stops=[];steps.forEach((s,i)=>{const lm=s.lm||{};s.stopIdx=[];
-    if(s.kind==='walk'){const names=[];if(lm.door)names.push('Puerta '+lm.door);(lm.via||[]).forEach(v=>names.push(v));if(lm.end&&!lm.last)names.push(lm.end);
+    if(s.kind==='walk'){const names=[];if(lm.door)names.push('Puerta '+lm.door);if(!OBRA){(lm.via||[]).forEach(v=>names.push(v));if(lm.end&&!lm.last)names.push(lm.end)}
       names.forEach(nm=>{s.stopIdx.push(stops.length);stops.push({name:nm,step:i})})}
     else if(s.kind==='lad'){s.stopIdx.push(stops.length);stops.push({name:(s.up?'Escala de subida':'Escala de bajada')+(lm.near?' junto a '+lm.near:''),step:i,lad:1})}
     else if(s.kind==='arrive'){s.stopIdx.push(stops.length);stops.push({name:clean(destName),step:i,dest:1})}});
   steps.forEach(s=>{s.sec=s.kind==='walk'?s.dist/WALK+((s.lm||{}).door&&/estanca/.test(s.lm.door)?TWT:0):s.kind==='lad'?TLAD:0;const k=s.stopIdx.length||1;s.stopIdx.forEach(j=>stops[j].sec=s.sec/k)});
   return stops}
 const fmtT=s=>s<60?`${Math.max(5,Math.round(s/5)*5)} s`:`${Math.round(s/60)} min`;
-function makeRoute(P,alt){const steps=annotate(ENG.steps(G,P,S.to.n),S.to.n,S.from&&S.from.n);if(S.to.d==='doublebottom')steps[steps.length-1].db=1;
+function makeRoute(P,alt){const steps=obraInfo(annotate(ENG.steps(G,P,S.to.n),S.to.n,S.from&&S.from.n));if(S.to.d==='doublebottom')steps[steps.length-1].db=1;
   const stops=buildStops(steps,S.to.n);return{P,steps,stops,met:routeMetrics(P),alt}}
 // ---- alertas
 let AC=null;
@@ -431,6 +433,107 @@ function chooseUI(){S.phase='choose';if(document.body.classList.contains('navmod
   document.getElementById('cback').onclick=()=>{S.options=null;S.steps=null;planUI();drawRoute()}}
 // ---- navegación por paradas
 function remSec(){let t=0;for(let j=S.i;j<S.steps.length;j++)t+=S.steps[j].sec||0;return t}
+// ---------- v4.0 Modo obra
+let OBRA=true;try{const v=localStorage.getItem('avt-obra');if(v!==null)OBRA=v==='1'}catch(e){}
+const ORD=['primera','segunda','tercera','cuarta','quinta','sexta','séptima','octava','novena','décima'];
+const ordF=k=>ORD[k-1]||(k+'ª');
+function wdeg(nid){return G.adj[nid].filter(([v,c,ty])=>ty==='w'&&G.nodes[v].k!=='room').length}
+function sideOf2(f,v){const c=f[0]*v[1]-f[1]*v[0];return c>0?'derecha':'izquierda'}
+const BIGEQ=(()=>{const L=[];(DK.toptanks.items||[]).forEach(it=>{if(/^Motor principal/.test(it.n))L.push({d:'toptanks',fr:it.fr,dy:it.dy,n:'los motores principales'});if(/^Diésel generador/.test(it.n))L.push({d:'toptanks',fr:it.fr,dy:it.dy,n:'los grupos generadores'})});
+  EQ.forEach(e=>{const m=e.tag.match(/^MSB-4PWS000([12])$/)||null;const l=e.tag.match(/^LCS-4PWS000(\d)$/);const nid=eqNid(e);if(nid==null)return;const n=G.nodes[nid];
+    if(m)L.push({d:n.d,fr:n.fr,dy:n.dy,n:'el cuadro principal MSB-'+m[1]});else if(l)L.push({d:n.d,fr:n.fr,dy:n.dy,n:'el Load Centre '+l[1]})});return L})();
+function obraInfo(steps){const N=G.nodes;let lastWalk=-1;const said=new Set();steps.forEach((s,i)=>{if(s.kind==='walk')lastWalk=i});
+  steps.forEach((s,i)=>{if(s.kind!=='walk'&&s.kind!=='lad')return;const o={};s.ob=o;const d=N[s.pts[0]].d;
+    if(s.kind==='lad'){const prev=steps[i-1];if(prev&&prev.kind==='walk'){const P=prev.pts.map(n=>N[n]);const a=P[P.length-2]||P[0],b=P[P.length-1];const f=[(b.fr-a.fr)*.67,(b.dy-a.dy)*.0529];const L=N[s.pts[0]];const v=[(L.fr-b.fr)*.67,(L.dy-b.dy)*.0529];
+        o.ladSide=Math.hypot(v[0],v[1])<1.2?'delante de ti':'a tu '+sideOf2(f,v)}return}
+    const P=s.pts.map(n=>mxy(N[n].fr,N[n].dy));
+    // cruces intermedios
+    let cross=0;for(let k=1;k<s.pts.length-1;k++){const n=s.pts[k];if(N[n].k==='w'&&wdeg(n)>=3)cross++}o.cross=cross;
+    // puertas a los lados y puertas atravesadas
+    const dl=[],dr=[];let thru=0;
+    DOORS.forEach(dd=>{if(dd.d!==d)return;const pr=proj(mxy(dd.fr,dd.dy),P);if(pr.s<0.5||pr.s>pr.len-0.3)return;
+      if(pr.d<0.45){thru++;return}if(pr.d>3.5)return;
+      // lado: buscar segmento
+      let acc=0;for(let k=1;k<P.length;k++){const L=Math.hypot(P[k][0]-P[k-1][0],P[k][1]-P[k-1][1]);if(pr.s<=acc+L+1e-6){const f=[P[k][0]-P[k-1][0],P[k][1]-P[k-1][1]];const v=[mxy(dd.fr,dd.dy)[0]-P[k-1][0],mxy(dd.fr,dd.dy)[1]-P[k-1][1]];(sideOf2(f,v)==='derecha'?dr:dl).push({s:pr.s,id:dd.id});break}acc+=L}});
+    o.dl=dl.length;o.dr=dr.length;o.thru=thru;
+    // puerta del destino
+    if(i===lastWalk&&S.to){const dn=N[S.to.nid];let best=null;DOORS.forEach(dd=>{if(dd.d!==dn.d)return;const dist=Math.hypot((dd.fr-dn.fr)*.67,(dd.dy-dn.dy)*.0529);if(dist<5&&(!best||dist<best[0]))best=[dist,dd]});
+      if(best){const all=dl.map(x=>({...x,side:'izquierda'})).concat(dr.map(x=>({...x,side:'derecha'})));const me=all.find(x=>x.id===best[1].id);
+        if(me){const k=all.filter(x=>x.side===me.side&&x.s<=me.s+0.01).length;o.destDoor={k,side:me.side,id:me.id}}}}
+    // equipos grandes
+    const near=[];BIGEQ.forEach(b=>{if(b.d!==d||said.has(b.n))return;if(i===lastWalk&&S.to&&Math.hypot((b.fr-N[S.to.nid].fr)*.67,(b.dy-N[S.to.nid].dy)*.0529)<4)return;const pr=proj(mxy(b.fr,b.dy),P);if(pr.d<=4.5&&!near.includes(b.n)){near.push(b.n);said.add(b.n)}});o.big=near});
+  return steps}
+const nPal=(n,s,p)=>n===1?'1 '+s:n+' '+p;
+function phraseX(s,facing){const p=ENG.phrase(s,facing,G);if(!OBRA||!s.ob)return p;const o=s.ob;
+  if(s.kind==='walk'){const pasos=Math.max(2,Math.round(s.dist/0.7));const dir=ENG.HEAD[s.head];let lead='';
+    if(facing!=null){const t=((s.head-facing)%4+4)%4;lead=t===0?'Sigue recto':t===1?'Gira a la derecha':t===3?'Gira a la izquierda':'Da media vuelta'}
+    const parts=[];if(s.exit)parts.push('Sal del local.');
+    let a=(lead?lead+' y ':'')+(s.dist<2?'avanza un par de pasos':`camina unos ${pasos} pasos`)+` hacia ${dir}`;
+    const bits=[];if(o.cross)bits.push(`pasarás ${nPal(o.cross,'cruce','cruces')}`);
+    if(o.dl||o.dr){const q=[];if(o.dl)q.push(`${nPal(o.dl,'puerta','puertas')} a tu izquierda`);if(o.dr)q.push(`${nPal(o.dr,'puerta','puertas')} a tu derecha`);bits.push('verás '+q.join(' y '))}
+    if(o.thru)bits.push(o.thru===1?'atravesarás una puerta':`atravesarás ${o.thru} puertas`);
+    if(o.big&&o.big.length)bits.push(('pasarás junto a '+o.big.join(' y ')).replace(/junto a el /g,'junto al ').replace(/ y el /g,' y al '));
+    a+=(bits.length?'. '+bits.map((x,k)=>k===0?x.charAt(0).toUpperCase()+x.slice(1):x).join(', '):'')+'.';
+    parts.push(a.charAt(0).toUpperCase()+a.slice(1));
+    if(o.destDoor)parts.push(`Tu destino es la ${ordF(o.destDoor.k)} puerta a tu ${o.destDoor.side}.`);
+    const ref=s.lm&&(s.lm.via||[]).length?` (según plano: ${s.lm.via.slice(0,2).join(', ')})`:'';
+    return Object.assign({},p,{say:parts.join(' ')+ref,sub:`Hacia ${dir} · ~${pasos} pasos`+(o.cross?` · ${nPal(o.cross,'cruce','cruces')}`:'')})}
+  if(s.kind==='lad'){const v=s.up?'Sube':'Baja';const say=`${v} por la escala que tendrás ${o.ladSide||'cerca'} hasta ${ENG.DECKNAME[s.to]}. Al llegar, dime hacia dónde miras.`;return Object.assign({},p,{say,sub:'Escala '+(o.ladSide||'')})}
+  return p}
+// ---------- Rutas grabadas con fotos (IndexedDB)
+const IDB={db:null,open(){return new Promise((res,rej)=>{if(this.db)return res(this.db);const r=indexedDB.open('avtnav',1);r.onupgradeneeded=()=>{r.result.createObjectStore('routes',{keyPath:'id'})};r.onsuccess=()=>{this.db=r.result;res(this.db)};r.onerror=()=>rej(r.error)})},
+  async all(){const db=await this.open();return new Promise((res,rej)=>{const q=db.transaction('routes').objectStore('routes').getAll();q.onsuccess=()=>res(q.result.sort((a,b)=>b.created-a.created));q.onerror=()=>rej(q.error)})},
+  async put(r){const db=await this.open();return new Promise((res,rej)=>{const tx=db.transaction('routes','readwrite');tx.objectStore('routes').put(r);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error)})},
+  async del(id){const db=await this.open();return new Promise((res,rej)=>{const tx=db.transaction('routes','readwrite');tx.objectStore('routes').delete(id);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error)})}};
+try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
+async function shrink(file){try{const url=URL.createObjectURL(file);const img=await new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=url});
+  const m=1280,k=Math.min(1,m/Math.max(img.naturalWidth,img.naturalHeight));const c=document.createElement('canvas');c.width=Math.round(img.naturalWidth*k);c.height=Math.round(img.naturalHeight*k);
+  c.getContext('2d').drawImage(img,0,0,c.width,c.height);URL.revokeObjectURL(url);return await new Promise(r=>c.toBlob(r,'image/jpeg',0.72))}catch(e){return file}}
+let REC=null;
+async function myRoutesUI(){S.phase='plan';if(document.body.classList.contains('navmode'))exitNav();let L=[];try{L=await IDB.all()}catch(e){}
+  sheet.innerHTML=`<div class="tabs"><button class="btn" id="tabR">Ruta</button><button class="btn pri" id="tabM">Mis rutas</button><button class="btn" id="tabE">Equipos</button></div>
+  <button class="btn go bigb" id="recnew">● Grabar una ruta nueva</button>
+  <p class="hint">Recorre el camino una vez y haz una <b>foto en cada punto clave</b> (una puerta, una escala, un equipo). La próxima vez la app te enseñará tus fotos en orden.</p>
+  ${L.length?L.map(r=>`<div class="res" style="display:flex;gap:10px;align-items:center"><div style="flex:1"><b>${r.name}</b><small>${r.points.length} puntos · ${new Date(r.created).toLocaleDateString('es-ES')}</small></div><button class="btn go" data-play="${r.id}">▶</button><button class="btn" data-del="${r.id}" aria-label="Borrar">🗑</button></div>`).join(''):'<p class="hint"><i>Todavía no tienes rutas grabadas.</i></p>'}
+  <p class="small">Las fotos se guardan solo en este iPhone. Si borras la app, se pierden.</p>`;
+  document.getElementById('tabR').onclick=()=>planUI();document.getElementById('tabE').onclick=()=>eqUI();
+  document.getElementById('recnew').onclick=()=>recStart();
+  sheet.querySelectorAll('[data-play]').forEach(b=>b.onclick=()=>playRoute(L.find(r=>r.id===b.dataset.play)));
+  sheet.querySelectorAll('[data-del]').forEach(b=>b.onclick=async()=>{if(confirm('¿Borrar esta ruta y sus fotos?')){await IDB.del(b.dataset.del);myRoutesUI()}})}
+function recStart(){REC={id:'r'+Date.now(),created:Date.now(),points:[],t0:Date.now(),c0:S.count};S.phase='rec';navMode(true);recUI()}
+function recUI(){const top=document.getElementById('navtop');top.className='';top.style.setProperty('--dc','#d93025');
+  top.innerHTML=`<div class="nt-row"><div class="nt-txt"><div class="nt-big">● Grabando ruta</div><div class="nt-sub">${REC.points.length} ${REC.points.length===1?'punto':'puntos'} · camina y haz una foto en cada punto clave</div></div></div>`;
+  const last=REC.points[REC.points.length-1];
+  sheet.innerHTML=`${last?`<div style="display:flex;gap:10px;align-items:center;margin-bottom:6px"><img src="${URL.createObjectURL(last.photo)}" style="width:64px;height:64px;object-fit:cover;border-radius:6px" alt="Último punto"><span class="small">Último: ${last.note||'(sin nota)'} · ${last.deck?DK[last.deck].name:''}</span></div>`:''}
+  <label class="btn go bigb" style="display:flex;align-items:center;justify-content:center;cursor:pointer">📷 Añadir punto (foto)<input type="file" accept="image/*" capture="environment" id="cam" hidden></label>
+  <div class="field"><input id="rnote" placeholder="Nota opcional: «puerta con andamio», «escala junto al cuadro»…"></div>
+  <div class="small">Cubierta de este punto: ${PLANKEYS.map(k=>`<button class="chip" data-dk="${k}" aria-pressed="${REC.deck===k}" style="border-left:5px solid ${DK[k].color}">${SHORT[k]}</button>`).join('')}</div>
+  <div class="nb" style="margin-top:6px"><button class="btn pri nb-main" id="recfin" ${REC.points.length?'':'disabled'}>✓ Terminar y guardar</button><button class="btn nb-ic" id="reccancel" aria-label="Cancelar">✕</button></div>`;
+  sheet.querySelectorAll('[data-dk]').forEach(b=>b.onclick=()=>{REC.deck=b.dataset.dk;recUI()});
+  document.getElementById('cam').onchange=async ev=>{const f=ev.target.files&&ev.target.files[0];if(!f)return;const ph=await shrink(f);const now=Date.now();
+    REC.points.push({photo:ph,note:document.getElementById('rnote').value.trim(),deck:REC.deck||null,secs:Math.round((now-(REC.tLast||REC.t0))/1000),steps:S.stepsOn?S.count-(REC.cLast!=null?REC.cLast:REC.c0):null});REC.tLast=now;REC.cLast=S.count;flash('ok','✓ Punto '+REC.points.length+' guardado');recUI()};
+  document.getElementById('recfin').onclick=async()=>{const def=(S.from&&S.to)?`${clean(S.from.n)} → ${clean(S.to.n)}`:'Ruta '+new Date().toLocaleString('es-ES',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+    const name=prompt('Nombre de la ruta:',def);if(name===null)return;REC.name=name||def;const r={id:REC.id,name:REC.name,created:REC.created,points:REC.points};
+    try{await IDB.put(r);REC=null;navMode(false);flash('ok','✓ Ruta guardada');myRoutesUI()}catch(e){alert('No se pudo guardar: '+e)}};
+  document.getElementById('reccancel').onclick=()=>{if(!REC.points.length||confirm('¿Descartar esta grabación?')){REC=null;navMode(false);myRoutesUI()}}}
+let PLAY=null;
+function playRoute(r){if(!r)return;PLAY={r,i:0};S.phase='play';navMode(true);playUI(true)}
+function playUI(say){const r=PLAY.r,k=PLAY.i,pt=r.points[k],N=r.points.length;const top=document.getElementById('navtop');
+  if(k>=N){top.className='arr';top.innerHTML=`<div class="nt-row"><div class="nt-txt"><div class="nt-big">Has llegado</div><div class="nt-sub">${r.name}</div></div></div>`;
+    sheet.innerHTML=`<div class="nb"><button class="btn go nb-main" id="pfin">✓ Terminar</button></div>`;flash('arr','✓ Has llegado al final de la ruta',true);speak('Has llegado al final de la ruta.');
+    document.getElementById('pfin').onclick=()=>{PLAY=null;navMode(false);myRoutesUI()};return}
+  top.className='';top.style.setProperty('--dc',pt.deck?DK[pt.deck].color:'#1a73e8');
+  const left=N-1-k;const hint=[pt.steps?`~${pt.steps} pasos`:'',pt.secs?`~${fmtT(pt.secs)}`:''].filter(Boolean).join(' · ');
+  top.innerHTML=`<div class="nt-row"><div class="nt-txt"><div class="nt-big">Punto ${k+1} de ${N}</div><div class="nt-sub">${pt.note?'<b>'+pt.note+'</b> · ':''}${hint?hint+' desde el anterior':''}</div></div></div>
+   <div class="nt-foot"><span class="nt-deck">${pt.deck?DK[pt.deck].name:'Cubierta no indicada'}</span><span>quedan ${left}</span></div>`;
+  sheet.innerHTML=`<img src="${URL.createObjectURL(pt.photo)}" alt="Foto del punto ${k+1}" style="width:100%;max-height:42vh;object-fit:contain;border-radius:8px;background:#000;display:block;margin-bottom:8px">
+  <div class="nb"><button class="btn go nb-main" id="psee">La veo ✓</button><button class="btn nb-ic" id="prep" aria-label="Repetir">🔊</button><button class="btn nb-ic" id="pback" aria-label="Anterior" ${k?'':'disabled'}>◀</button><button class="btn nb-ic" id="pquit" aria-label="Salir">✕</button></div>`;
+  const msg=`Punto ${k+1} de ${N}. ${pt.note?pt.note+'.':''} Busca lo que ves en la foto.`;if(say)speak(msg);
+  if(left===2&&k>0)flash('warn','Atención: el final está a 2 puntos');
+  document.getElementById('psee').onclick=()=>{PLAY.i++;if(PLAY.i<N)flash('ok','✓ Vas bien');playUI(true)};
+  document.getElementById('prep').onclick=()=>speak(msg);document.getElementById('pback').onclick=()=>{PLAY.i=Math.max(0,PLAY.i-1);playUI(true)};
+  document.getElementById('pquit').onclick=()=>{PLAY=null;navMode(false);myRoutesUI()}}
+
 let WL=null;
 async function wake(on){try{if(on){if('wakeLock' in navigator&&!WL){WL=await navigator.wakeLock.request('screen');WL.addEventListener('release',()=>{WL=null})}}else if(WL){await WL.release();WL=null}}catch(e){}}
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&document.body.classList.contains('navmode'))wake(true)});
@@ -438,7 +541,7 @@ function navMode(on){document.body.classList.toggle('navmode',!!on);let top=docu
   if(on&&!top){top=document.createElement('div');top.id='navtop';document.body.appendChild(top)}
   if(!on&&top)top.remove();wake(on);setTimeout(()=>{if(cur){clamp();apply()}},50)}
 function exitNav(){clearTimeout(watchT);navMode(false);const b=document.getElementById('alertb');if(b)b.style.display='none'}
-function navUI(speakIt,sayOverride){S.phase='nav';navMode(true);const s=S.steps[S.i];const p=ENG.phrase(s,S.facing,G);
+function navUI(speakIt,sayOverride){S.phase='nav';navMode(true);const s=S.steps[S.i];const p=phraseX(s,S.facing);
   const d=G.nodes[s.pts[0]].d;if(cur.key!==d)show(d,true);drawRoute();
   const N=S.stops.length;const pend=s.stopIdx.filter(j=>j>=S.si);const nxt=pend.length?S.stops[pend[0]]:null;const left=N-1-S.si;
   const top=document.getElementById('navtop');top.style.setProperty('--dc',DK[d].color);
