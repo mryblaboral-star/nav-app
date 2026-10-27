@@ -116,10 +116,12 @@ body.navmode #alertb{top:calc(env(safe-area-inset-top,0px) + 150px)}
 nav button{position:relative}
 .lyrdot{display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:24px;border-radius:12px;color:#fff;font-size:12px;font-weight:700}
 body.navmode .lyr{display:none}
+body.mapmax #sheet{display:none!important}
+body.navmode #zmax{display:none}
 </style>
 </head>
 <body>
-<header><h1>AVANTE 2200 · Navegador <small style="font-weight:400;font-size:.7rem">v4.2</small></h1><span id="dname"></span></header>
+<header><h1>AVANTE 2200 · Navegador <small style="font-weight:400;font-size:.7rem">v4.3</small></h1><span id="dname"></span></header>
 <div id="lock" style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:24px;gap:12px;max-width:420px;margin:0 auto;width:100%">
 <img src="icon-192.png" alt="" width="72" height="72" style="border-radius:16px">
 <h2 style="font-size:1.3rem;margin:0">Navegador a bordo</h2>
@@ -131,7 +133,7 @@ body.navmode .lyr{display:none}
   <nav id="decks" aria-label="Cubiertas"></nav>
   <div id="view"><div id="stage"></div>
     <div class="ov" id="bow">▲ PROA</div><div class="ov" id="p">BABOR</div><div class="ov" id="s">ESTRIBOR</div>
-    <div id="zoom"><button class="btn" id="zi" aria-label="Acercar">+</button><button class="btn" id="zo" aria-label="Alejar">−</button><button class="btn" id="zf" aria-label="Centrar en mí">◎</button></div>
+    <div id="zoom"><button class="btn" id="zi" aria-label="Acercar">+</button><button class="btn" id="zo" aria-label="Alejar">−</button><button class="btn" id="zf" aria-label="Centrar en mí">◎</button><button class="btn" id="zmax" aria-label="Plano grande">⤢</button></div>
   </div>
 </main>
 <section id="sheet" style="display:none"></section>
@@ -232,7 +234,7 @@ function show(k,noFit){cur=DK[k];PLANKEYS.forEach(x=>DK[x].btn.setAttribute('ari
     const e=document.createElement('div');e.className='pin lad lp'+(dir==='up'?' l-up':dir==='down'?' l-down':'');e.dataset.lk=L.k;e.style.left=X+'px';e.style.top=Y+'px';
     e.innerHTML='<span>'+(dir==='up'?'▲':dir==='down'?'▼':(up?'▲':'▼'))+'</span>';e.title='Escala';stage.appendChild(e)}}
   for(const l of (cur.vlad||[])){const [X,Y]=xy(k,l.fr,l.dy);const e=document.createElement('div');e.className='pin lad';e.style.left=X+'px';e.style.top=Y+'px';e.innerHTML='<span>▲▼ V</span>';stage.appendChild(e)}
-  drawRoute();if(typeof drawLayers==='function')drawLayers();if(!noFit){st.s=fitS();st.x=0;st.y=8;clamp();apply()}}
+  drawRoute();if(typeof drawLayers==='function')drawLayers();if(!noFit){st.s=fitS();st.x=0;st.y=8;clamp();apply();if(typeof fitLayers==='function')fitLayers()}}
 function pin(cls,X,Y){const e=document.createElement('div');e.className='pin '+cls;e.style.left=X+'px';e.style.top=Y+'px';e.innerHTML='<span></span>';stage.appendChild(e);return e}
 function drawRoute(){stage.querySelectorAll('.me,.dst').forEach(e=>e.remove());const svg=document.getElementById('rsvg');if(!svg)return;svg.innerHTML='';
   DECKS.forEach(d=>d.btn&&d.btn.classList.remove('rt'));
@@ -270,6 +272,8 @@ view.addEventListener('wheel',e=>{e.preventDefault();const r=R();zoomAt(e.deltaY
 document.getElementById('zi').onclick=()=>{const r=R();zoomAt(1.5,r.width/2,r.height/2,true)};
 document.getElementById('zo').onclick=()=>{const r=R();zoomAt(1/1.5,r.width/2,r.height/2,true)};
 document.getElementById('zf').onclick=()=>focusMe(true);
+function toggleMax(on){document.body.classList.toggle('mapmax',on);const b=document.getElementById('zmax');if(b){b.textContent=on?'⤡':'⤢';b.setAttribute('aria-label',on?'Mostrar panel':'Plano grande')}setTimeout(()=>{if(cur){clamp();apply()}},60)}
+document.getElementById('zmax').onclick=()=>toggleMax(!document.body.classList.contains('mapmax'));
 window.addEventListener('resize',()=>{if(cur){clamp();apply()}});
 function tapPlace(X,Y){const [fr,dy]=inv(cur.key,X,Y);let best=null;
   G.nodes.forEach((n,i)=>{if(n.d!==cur.key||n.k==='lad')return;const dd=Math.hypot((n.fr-fr)*.67,(n.dy-dy)*.0529);if(!best||dd<best[0])best=[dd,i]});
@@ -592,7 +596,10 @@ function drawLayers(){stage.querySelectorAll('.lyr').forEach(e=>e.remove());if(!
   P.filter(p=>p.d===cur.key).forEach(p=>{const L=layColor(p);const [X,Y]=xy(p.d,p.fr,p.dy);const e=document.createElement('div');e.className='pin lyr';e.style.left=X+'px';e.style.top=Y+'px';
     const eqs=p.items.filter(i=>i.eq);const onlyRoom=!eqs.length;const lbl=onlyRoom?p.items[0].room.n.replace(/\s*\(.*\)/,''):(eqs[0].eq.tag+(eqs.length>1?' +'+(eqs.length-1):''));
     e.innerHTML=`<span style="--lc:${L.color}"><b>${onlyRoom?'⚡':L.tag}</b> ${lbl}</span>`;e._p=p;stage.appendChild(e)})}
-function layerCard(p){const eqs=p.items.filter(i=>i.eq).map(i=>i.eq);const rooms=p.items.filter(i=>i.room).map(i=>i.room);const n=G.nodes[p.nid];
+function fitLayers(){if(S.phase!=='plan'||S.steps)return;const P=layerItems().filter(p=>p.d===cur.key);if(!P.length)return;
+  const XY=P.map(p=>xy(p.d,p.fr,p.dy));const ys=XY.map(a=>a[1]),xs=XY.map(a=>a[0]);const y0=Math.min(...ys),y1=Math.max(...ys),x0=Math.min(...xs),x1=Math.max(...xs);
+  const r=R();const s=Math.max(minS(),Math.min(fitS()*1.4,(r.height-80)/Math.max(200,y1-y0+160),(r.width-40)/Math.max(200,x1-x0+200)));centerOn((x0+x1)/2,(y0+y1)/2,s,true);st.s=s;centerOn((x0+x1)/2,(y0+y1)/2,s,true)}
+function layerCard(p){if(document.body.classList.contains('mapmax'))toggleMax(false);const eqs=p.items.filter(i=>i.eq).map(i=>i.eq);const rooms=p.items.filter(i=>i.room).map(i=>i.room);const n=G.nodes[p.nid];
   // también todos los equipos de cualquier módulo en ese mismo punto
   sheet.innerHTML=`<h2>${rooms.length?rooms[0].n:(eqs[0].room||ENG.DECKNAME[p.d])}</h2><p class="hint" style="margin-top:0">${ENG.DECKNAME[p.d]} · ${ENG.sideOf(n.dy)}</p>
   ${eqs.length?eqs.map((e,i)=>`<button class="res" data-le="${EQ.indexOf(e)}"><b>${e.tag}</b><small>${e.desc||''} · ${e.mod} <span class="badge b-${e.conf}">${e.conf}</span></small></button>`).join(''):'<p class="hint">Local eléctrico clave.</p>'}
@@ -609,12 +616,12 @@ function layersUI(){S.phase='plan';if(document.body.classList.contains('navmode'
   sheet.querySelectorAll('[data-ly]').forEach(c=>c.onchange=()=>{LAYON[c.dataset.ly]=c.checked;if(!c.checked)delete LAYON[c.dataset.ly];saveLay();drawLayers()});
   document.getElementById('lall').onclick=()=>{LAYERS.forEach(L=>LAYON[L.id]=true);saveLay();layersUI();drawLayers()};
   document.getElementById('lnone').onclick=()=>{LAYON={};saveLay();layersUI();drawLayers()};
-  document.getElementById('lok').onclick=()=>{planUI();drawRoute();drawLayers();const P=layerItems();if(P.length&&!P.some(p=>p.d===cur.key)){const c={};P.forEach(p=>c[p.d]=(c[p.d]||0)+1);const best=Object.entries(c).sort((a,b)=>b[1]-a[1])[0][0];show(best)}}}
+  document.getElementById('lok').onclick=()=>{planUI();drawRoute();drawLayers();const P=layerItems();if(P.length&&!P.some(p=>p.d===cur.key)){const c={};P.forEach(p=>c[p.d]=(c[p.d]||0)+1);const best=Object.entries(c).sort((a,b)=>b[1]-a[1])[0][0];show(best)}else fitLayers()}}
 
 let WL=null;
 async function wake(on){try{if(on){if('wakeLock' in navigator&&!WL){WL=await navigator.wakeLock.request('screen');WL.addEventListener('release',()=>{WL=null})}}else if(WL){await WL.release();WL=null}}catch(e){}}
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&document.body.classList.contains('navmode'))wake(true)});
-function navMode(on){document.body.classList.toggle('navmode',!!on);let top=document.getElementById('navtop');
+function navMode(on){if(on)document.body.classList.remove('mapmax');document.body.classList.toggle('navmode',!!on);let top=document.getElementById('navtop');
   if(on&&!top){top=document.createElement('div');top.id='navtop';document.body.appendChild(top)}
   if(!on&&top)top.remove();wake(on);setTimeout(()=>{if(cur){clamp();apply()}},50)}
 function exitNav(){clearTimeout(watchT);navMode(false);const b=document.getElementById('alertb');if(b)b.style.display='none'}
