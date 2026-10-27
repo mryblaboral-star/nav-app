@@ -87,10 +87,30 @@ details{margin-top:.6rem;font-size:.85rem}summary{cursor:pointer;color:var(--ink
 textarea{width:100%;font:inherit;font-size:.85rem;min-height:5rem;background:var(--paper);color:var(--ink);border:1px solid var(--line);border-radius:4px}
 #alertb{position:fixed;top:calc(env(safe-area-inset-top,0px) + 46px);left:10px;right:10px;z-index:9000;padding:.75rem .9rem;border-radius:10px;font-weight:700;font-size:1.05rem;display:none;box-shadow:0 4px 14px rgba(0,0,0,.35)}
 .ab-ok,.ab-arr{background:#1e8e3e;color:#fff}.ab-warn{background:#f9ab00;color:#202124}.ab-bad{background:#d93025;color:#fff;font-size:1.2rem}
+.bigb{width:100%;min-height:58px;font-size:1.15rem;margin:.1rem 0 .5rem}
+.favs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:.3rem 0 .5rem}
+.fav{font:inherit;font-size:.86rem;font-weight:700;min-height:48px;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:8px;cursor:pointer;padding:.2rem}
+.seg{display:inline-flex;border:1px solid var(--ink);border-radius:16px;overflow:hidden;vertical-align:middle}.seg button{font:inherit;font-size:.8rem;border:0;background:var(--paper);color:var(--ink);padding:.25rem .7rem}.seg button[aria-pressed=true]{background:var(--ink);color:var(--paper)}
+.mic{width:120px;height:120px;border-radius:50%;background:#d93025;color:#fff;font-size:3rem;display:flex;align-items:center;justify-content:center;margin:1rem auto;border:0}
+@media (prefers-reduced-motion:no-preference){.mic.on{animation:pulse 1.2s infinite}@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(217,48,37,.6)}70%{box-shadow:0 0 0 26px rgba(217,48,37,0)}100%{box-shadow:0 0 0 0 rgba(217,48,37,0)}}}
+body.navmode header,body.navmode nav#decks,body.navmode .onlyplan{display:none}
+body.navmode #sheet{position:fixed;left:0;right:0;bottom:0;z-index:50;max-height:60%;border-top:4px solid var(--deckc);padding:8px 10px calc(env(safe-area-inset-bottom,0px) + 8px);box-shadow:0 -4px 14px rgba(0,0,0,.18)}
+body.navmode #zoom{bottom:auto;top:calc(env(safe-area-inset-top,0px) + 175px)}
+body.navmode .ov#bow{top:calc(env(safe-area-inset-top,0px) + 150px)}
+body.navmode #alertb{top:calc(env(safe-area-inset-top,0px) + 150px)}
+#navtop{position:fixed;left:0;right:0;top:0;z-index:60;background:#14284b;color:#fff;padding:calc(env(safe-area-inset-top,0px) + 8px) 12px 6px;border-bottom:6px solid var(--dc,#1a73e8);box-shadow:0 4px 14px rgba(0,0,0,.25)}
+#navtop.arr{background:#1e8e3e}
+#navtop .nt-row{display:flex;gap:10px;align-items:center}#navtop svg{width:54px;height:54px;flex:none}
+#navtop .nt-big{font-size:1.45rem;font-weight:700;line-height:1.1}#navtop .nt-sub{font-size:.92rem;opacity:.92;margin-top:2px}
+#navtop .nt-say{font-size:.82rem;opacity:.85;margin-top:5px;max-height:2.6em;overflow:hidden}
+#navtop .nt-foot{display:flex;justify-content:space-between;gap:8px;font-size:.78rem;margin-top:4px;opacity:.95}
+#navtop .nt-deck{background:var(--dc);color:#14284b;font-weight:700;border-radius:4px;padding:0 6px}
+.nb{display:flex;gap:8px}.nb-main{flex:1;min-height:58px;font-size:1.2rem}.nb-ic{min-width:58px;min-height:58px;font-size:1.3rem}
+.nb2{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:8px}.nb2 .btn{min-height:46px;font-size:.85rem;padding:0 .3rem}
 </style>
 </head>
 <body>
-<header><h1>AVANTE 2200 · Navegador <small style="font-weight:400;font-size:.7rem">v3.1</small></h1><span id="dname"></span></header>
+<header><h1>AVANTE 2200 · Navegador <small style="font-weight:400;font-size:.7rem">v3.4</small></h1><span id="dname"></span></header>
 <div id="lock" style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:24px;gap:12px;max-width:420px;margin:0 auto;width:100%">
 <img src="icon-192.png" alt="" width="72" height="72" style="border-radius:16px">
 <h2 style="font-size:1.3rem;margin:0">Navegador a bordo</h2>
@@ -216,7 +236,7 @@ function mePos(){if(S.phase==='nav'&&S.steps){const s=S.steps[S.i];const a=G.nod
   if(S.from){const n=G.nodes[S.from.nid];return{d:n.d,fr:n.fr,dy:n.dy}}return null}
 function along(s,f){let L=0;const P=s.pts.map(n=>G.nodes[n]);const seg=[];for(let i=1;i<P.length;i++){const l=Math.hypot((P[i].fr-P[i-1].fr)*.67,(P[i].dy-P[i-1].dy)*.0529);seg.push(l);L+=l}
   let t=f*L;for(let i=1;i<P.length;i++){if(t<=seg[i-1]||i===P.length-1){const k=seg[i-1]?Math.min(1,t/seg[i-1]):1;return{d:P[i].d,fr:P[i-1].fr+(P[i].fr-P[i-1].fr)*k,dy:P[i-1].dy+(P[i].dy-P[i-1].dy)*k}}t-=seg[i-1]}}
-function focusMe(anim){const me=mePos();if(!me)return;if(cur.key!==me.d)show(me.d,true);const [X,Y]=xy(me.d,me.fr,me.dy);centerOn(X,Y,Math.max(st.s,.55),anim)}
+function focusMe(anim){const me=mePos();if(!me)return;if(cur.key!==me.d)show(me.d,true);const [X,Y]=xy(me.d,me.fr,me.dy);centerOn(X,Y-(document.body.classList.contains('navmode')?40/Math.max(st.s,.55):0),Math.max(st.s,.55),anim)}
 // gestures
 const pts=new Map();let moved=0,lastTap=0;
 view.addEventListener('pointerdown',e=>{view.setPointerCapture(e.pointerId);pts.set(e.pointerId,{x:e.clientX,y:e.clientY});moved=0});
@@ -295,9 +315,10 @@ function aliasOffer(r){if(!lastMiss||norm(lastMiss)===norm(r.n)||r.alias)return'
   return`<div class="warn" id="aof">¿Guardar <b>«${a.replace(/</g,'')}»</b> como tu nombre para <b>${r.n}</b>? Así lo encontrarás escribiéndolo. <div class="row"><button class="btn pri" id="aok">Guardar</button><button class="btn" id="ano">No</button></div></div>`}
 function aliasesHTML(){const k=Object.keys(ALIAS);if(!k.length)return'';return`<details><summary>Mis nombres (${k.length})</summary>${k.map(a=>{const r=ROOMS.find(x=>x.ref===ALIAS[a]);return`<div class="row" style="align-items:center;justify-content:space-between"><span class="small"><b>${a}</b> → ${r?r.n:'?'}</span><button class="btn" data-del="${encodeURIComponent(a)}">Borrar</button></div>`}).join('')}</details>`}
 // ---------- phases
-function planUI(){S.phase='plan';
+function planUI(){S.phase='plan';if(document.body.classList.contains('navmode'))exitNav();
   sheet.innerHTML=`<div class="tabs"><button class="btn pri" id="tabR">Ruta</button><button class="btn" id="tabE">Equipos</button></div>
-  <div class="row" style="margin-top:0"><button class="btn pri" id="voice" style="flex:1">🎤 Dímelo en español</button></div><div class="field"><label for="qf">Estoy en</label><input id="qf" placeholder="Local, código de la placa (2-93-00-E) o toca el plano" value="${S.from?S.from.n:''}" class="${S.from?'ok':''}"></div>
+  <button class="btn pri bigb" id="voice">🎤 Toca y habla</button>
+  ${favsHTML()}<div class="field"><label for="qf">Estoy en</label><input id="qf" placeholder="Local, código de la placa (2-93-00-E) o toca el plano" value="${S.from?S.from.n:''}" class="${S.from?'ok':''}"></div>
   <div class="field"><label for="qt">Voy a</label><input id="qt" placeholder="Destino: MSB, cuadro, puente, DG…" value="${S.to?S.to.n:''}" class="${S.to?'ok':''}"></div>
   <div id="list"></div>
   <div class="row"><button class="btn go" id="start" ${S.from&&S.to?'':'disabled'}>Empezar navegación</button></div>
@@ -312,12 +333,12 @@ function planUI(){S.phase='plan';
         const n=G.nodes[r.nid];show(r.d==='doublebottom'?'doublebottom':n.d,true);const [X,Y]=xy(r.d,r.fr,r.dy);centerOn(X,Y,.5,true);drawRoute()})}};
   bind('qf','from');bind('qt','to');
   document.getElementById('tabE').onclick=()=>eqUI();
-  document.getElementById('voice').onclick=()=>voiceUI();
+  document.getElementById('voice').onclick=()=>voiceQuick();bindFavs();
   sheet.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{delete ALIAS[decodeURIComponent(b.dataset.del)];saveAlias();planUI()});
   document.getElementById('start').onclick=startNav;bindNotes()}
 let EQG=null;
 const GROUPS=[...new Set(EQ.map(e=>e.group))];
-function eqUI(){S.phase='plan';
+function eqUI(){S.phase='plan';if(document.body.classList.contains('navmode'))exitNav();
   const list=EQG?EQ.filter(e=>e.group===EQG):[];
   sheet.innerHTML=`<div class="tabs"><button class="btn" id="tabR">Ruta</button><button class="btn pri" id="tabE">Equipos</button></div>
   <div>${GROUPS.map((g,i)=>`<button class="chip" data-g="${i}" aria-pressed="${g===EQG}">${g} (${EQ.filter(e=>e.group===g).length})</button>`).join('')}</div>
@@ -392,7 +413,7 @@ function flash(kind,msg,keep){let b=document.getElementById('alertb');if(!b){b=d
   b.className='ab-'+kind;b.textContent=msg;b.style.display='block';clearTimeout(b._t);if(!keep)b._t=setTimeout(()=>b.style.display='none',kind==='bad'?7000:kind==='warn'?5000:2200);beep(kind)}
 let watchT=null;function watch(sec,name){clearTimeout(watchT);if(!sec)return;watchT=setTimeout(()=>{if(S.phase!=='nav')return;const m=`¿Ves ya ${name}? Si te has pasado, para y comprueba la placa más cercana.`;flash('warn',m);speak(m)},Math.max(25,sec*2+20)*1000)}
 // ---- elegir ruta
-function startNav(){const rec=pathW(S.from.nid,S.to.nid,safeW);if(!rec){sheet.insertAdjacentHTML('afterbegin','<div class="warn">No encuentro una ruta entre esos dos puntos con el plano.</div>');return}
+function startNav(){saveRecent();const rec=pathW(S.from.nid,S.to.nid,safeW);if(!rec){sheet.insertAdjacentHTML('afterbegin','<div class="warn">No encuentro una ruta entre esos dos puntos con el plano.</div>');return}
   const used=new Set();for(let i=1;i<rec.length;i++)used.add(ekey(rec[i-1].n,rec[i].n));
   const altP=pathW(S.from.nid,S.to.nid,(u,v,c,ty)=>safeW(u,v,c,ty)*(used.has(ekey(u,v))?5:1));
   const R1=makeRoute(rec,false);S.options=[R1];
@@ -400,7 +421,7 @@ function startNav(){const rec=pathW(S.from.nid,S.to.nid,safeW);if(!rec){sheet.in
     if(sh/Math.max(1,altP.length-1)<0.8&&R2.met.m<=R1.met.m*2.5+40)S.options.push(R2)}
   chooseUI()}
 function metHTML(r){const m=r.met;return`~${fmtT(m.sec)} · ${m.m} m · ${m.lad} ${m.lad===1?'escala':'escalas'} · ${m.wt} ${m.wt===1?'puerta estanca':'puertas estancas'} · <b>${r.stops.length} paradas</b>`}
-function chooseUI(){S.phase='choose';const n0=G.nodes[S.from.nid];show(n0.d,true);drawRoute();focusMe(true);
+function chooseUI(){S.phase='choose';if(document.body.classList.contains('navmode'))exitNav();const n0=G.nodes[S.from.nid];show(n0.d,true);drawRoute();focusMe(true);
   sheet.innerHTML=`<h2>Elige tu ruta</h2><p class="hint" style="margin-top:0">Desde <b>${clean(S.from.n)}</b> hasta <b>${clean(S.to.n)}</b></p>
   ${S.options.map((r,i)=>`<button class="res" data-o="${i}" style="border:2px solid ${i?'#9aa0a6':'#1a73e8'};border-radius:8px;margin-bottom:8px;padding:.6rem">
    <b>${i?'Alternativa':'Recomendada · más corta y segura'}</b><small><svg width="46" height="8" style="vertical-align:middle;margin-right:6px"><line x1="2" y1="4" x2="44" y2="4" stroke="${i?'#9aa0a6':'#1a73e8'}" stroke-width="5" ${i?'stroke-dasharray="7 6"':''} stroke-linecap="round"/></svg>${metHTML(r)}</small></button>`).join('')}
@@ -410,31 +431,42 @@ function chooseUI(){S.phase='choose';const n0=G.nodes[S.from.nid];show(n0.d,true
   document.getElementById('cback').onclick=()=>{S.options=null;S.steps=null;planUI();drawRoute()}}
 // ---- navegación por paradas
 function remSec(){let t=0;for(let j=S.i;j<S.steps.length;j++)t+=S.steps[j].sec||0;return t}
-function navUI(speakIt,sayOverride){S.phase='nav';const s=S.steps[S.i];const p=ENG.phrase(s,S.facing,G);
-  const d=G.nodes[s.pts[0]].d;if(cur.key!==d)show(d,true);drawRoute();focusMe(true);
-  const N=S.stops.length;const pend=s.stopIdx.filter(j=>j>=S.si);const nxt=pend.length?S.stops[pend[0]]:null;
-  const left=N-1-S.si;let extra='';
-  if(s.kind==='arrive'&&s.db)extra='<div class="warn">El destino está en el doble fondo: acceso por registro desde esta plataforma, solo con permiso de trabajo y procedimiento de espacio confinado.</div>';
-  const btn=s.kind==='arrive'?'<button class="btn go" id="fin">Terminar</button>':s.kind==='lad'?`<button class="btn go" id="see">Ya estoy en ${ENG.DECKNAME[s.to].replace(/ \(.*\)/,'')} ✓</button>`:nxt?'<button class="btn go" id="see">La veo ✓</button>':'<button class="btn go" id="see">Hecho ✓</button>';
-  sheet.innerHTML=`<div class="cmd">${arrowSVG(p.arrow)}<div><div class="big">${p.short}</div><div class="sub">${p.sub}</div></div></div>
-  <div class="say">${sayOverride||p.say}</div>
-  ${nxt&&s.kind==='walk'?`<div class="say" style="border-color:#1e8e3e">Próxima parada: <b>${nxt.name}</b> · ~${fmtT(nxt.sec||5)}</div>`:''}${extra}
-  <p class="small" style="margin:.3rem 0"><b>${s.kind==='arrive'?'Has llegado':`Parada ${Math.min(S.si+1,N)} de ${N} · quedan ${left<0?0:left} hasta el destino`}</b> · llegada en ~${fmtT(remSec())}</p>
-  <div class="row">${btn}<button class="btn" id="rep" aria-label="Repetir instrucción">🔊</button><button class="btn" id="chk">Comprobar placa</button></div>
-  <div id="chkbox"></div>
-  <div class="row"><button class="btn" id="lost">Estoy perdido</button><button class="btn" id="back" ${S.i?'':'disabled'}>Atrás</button><button class="btn" id="reo">Reorientar</button><button class="btn" id="fix">Corregir</button></div>
-  <p class="small">Destino: ${S.to.n}${S.alt?' · ruta alternativa':''}</p>`;
+let WL=null;
+async function wake(on){try{if(on){if('wakeLock' in navigator&&!WL){WL=await navigator.wakeLock.request('screen');WL.addEventListener('release',()=>{WL=null})}}else if(WL){await WL.release();WL=null}}catch(e){}}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&document.body.classList.contains('navmode'))wake(true)});
+function navMode(on){document.body.classList.toggle('navmode',!!on);let top=document.getElementById('navtop');
+  if(on&&!top){top=document.createElement('div');top.id='navtop';document.body.appendChild(top)}
+  if(!on&&top)top.remove();wake(on);setTimeout(()=>{if(cur){clamp();apply()}},50)}
+function exitNav(){clearTimeout(watchT);navMode(false);const b=document.getElementById('alertb');if(b)b.style.display='none'}
+function navUI(speakIt,sayOverride){S.phase='nav';navMode(true);const s=S.steps[S.i];const p=ENG.phrase(s,S.facing,G);
+  const d=G.nodes[s.pts[0]].d;if(cur.key!==d)show(d,true);drawRoute();
+  const N=S.stops.length;const pend=s.stopIdx.filter(j=>j>=S.si);const nxt=pend.length?S.stops[pend[0]]:null;const left=N-1-S.si;
+  const top=document.getElementById('navtop');top.style.setProperty('--dc',DK[d].color);
+  const arrived=s.kind==='arrive';
+  top.className=arrived?'arr':'';
+  top.innerHTML=`<div class="nt-row">${arrowSVG(p.arrow)}<div class="nt-txt"><div class="nt-big">${arrived?'Has llegado':p.short}</div>
+    <div class="nt-sub">${arrived?S.to.n:(nxt&&s.kind==='walk'?`Próxima parada: <b>${nxt.name}</b> · ~${fmtT(nxt.sec||5)}`:p.sub)}</div></div></div>
+    <div class="nt-say">${sayOverride||p.say}</div>
+    <div class="nt-foot"><span class="nt-deck">${DK[d].name}</span><span>${arrived?'':`Parada ${Math.min(S.si+1,N)} de ${N} · quedan ${left<0?0:left} · ~${fmtT(remSec())}`}</span></div>`;
+  const btn=arrived?'<button class="btn go nb-main" id="fin">✓ Terminar</button>':s.kind==='lad'?`<button class="btn go nb-main" id="see">Ya estoy en ${ENG.DECKNAME[s.to].replace(/ \(.*\)/,'')} ✓</button>`:nxt?'<button class="btn go nb-main" id="see">La veo ✓</button>':'<button class="btn go nb-main" id="see">Hecho ✓</button>';
+  let extra='';if(arrived&&s.db)extra='<div class="warn">El destino está en el doble fondo: acceso por registro desde esta plataforma, solo con permiso de trabajo y procedimiento de espacio confinado.</div>';
+  sheet.innerHTML=`${extra}<div class="nb">${btn}<button class="btn nb-ic" id="rep" aria-label="Repetir instrucción">🔊</button><button class="btn nb-ic" id="more" aria-label="Más opciones" aria-expanded="false">⋯</button></div>
+  <div id="morebox" hidden><div class="nb2"><button class="btn" id="chk">Comprobar placa</button><button class="btn" id="lost">Estoy perdido</button><button class="btn" id="back" ${S.i?'':'disabled'}>Atrás</button><button class="btn" id="reo">Reorientar</button><button class="btn" id="fix">Corregir</button><button class="btn" id="quit">Salir</button></div><div id="chkbox"></div>
+  <p class="small">Destino: ${S.to.n}${S.alt?' · ruta alternativa':''}</p></div>`;
+  focusMe(true);
   if(speakIt)speak(sayOverride||p.say);
-  watch(nxt?nxt.sec:s.sec,nxt?nxt.name:'el final de este tramo');
+  if(!arrived)watch(nxt?nxt.sec:s.sec,nxt?nxt.name:'el final de este tramo');
   const see=document.getElementById('see');if(see)see.onclick=()=>advance(p);
-  const fin=document.getElementById('fin');if(fin)fin.onclick=()=>{clearTimeout(watchT);S.from={nid:S.to.nid,n:S.to.n,d:S.to.d,ref:S.to.ref};S.to=null;S.steps=null;S.stops=null;planUI();drawRoute()};
+  const fin=document.getElementById('fin');if(fin)fin.onclick=()=>{exitNav();S.from={nid:S.to.nid,n:S.to.n,d:S.to.d,ref:S.to.ref};S.to=null;S.steps=null;S.stops=null;planUI();drawRoute()};
   document.getElementById('rep').onclick=()=>speak(sayOverride||p.say);
+  const mb=document.getElementById('more');mb.onclick=()=>{const box=document.getElementById('morebox');box.hidden=!box.hidden;mb.setAttribute('aria-expanded',String(!box.hidden))};
   document.getElementById('back').onclick=()=>{S.i=Math.max(0,S.i-1);S.si=S.steps[S.i].stopIdx.length?S.steps[S.i].stopIdx[0]:S.si;S.facing=null;orientUI(false)};
-  document.getElementById('lost').onclick=()=>{clearTimeout(watchT);S.steps=null;S.stops=null;S.from=null;speechSynthesis&&speechSynthesis.cancel();planUI();drawRoute();
-    sheet.insertAdjacentHTML('afterbegin','<div class="warn">Busca la placa del local más cercano, escribe su código en «Estoy en» y pulsa «Empezar» otra vez. El destino se mantiene.</div>')};
+  document.getElementById('lost').onclick=()=>{exitNav();S.steps=null;S.stops=null;S.from=null;speechSynthesis&&speechSynthesis.cancel();planUI();drawRoute();
+    sheet.insertAdjacentHTML('afterbegin','<div class="warn">Marca dónde estás: toca tu posición en el plano o escribe el código de un local en «Estoy en», y pulsa «Empezar» otra vez. El destino se mantiene.</div>')};
+  document.getElementById('quit').onclick=()=>{exitNav();S.steps=null;S.stops=null;speechSynthesis&&speechSynthesis.cancel();planUI();drawRoute()};
   document.getElementById('reo').onclick=()=>orientUI(false);
   document.getElementById('chk').onclick=()=>checkUI();
-  document.getElementById('fix').onclick=()=>{const t=prompt('Describe qué no coincide en este tramo (puerta cerrada, escala que no existe, otro camino…):');if(t){notes.push({t:new Date().toISOString().slice(0,16).replace('T',' '),paso:p.say,de:S.from.n,a:S.to.n,nota:t});saveNotes();alert('Corrección guardada en este móvil.')}}}
+  document.getElementById('fix').onclick=()=>{const tx=prompt('Describe qué no coincide en este tramo (puerta cerrada, escala que no existe, otro camino…):');if(tx){notes.push({t:new Date().toISOString().slice(0,16).replace('T',' '),paso:p.say,de:S.from.n,a:S.to.n,nota:tx});saveNotes();alert('Corrección guardada en este móvil.')}}}
 function advance(p){const s=S.steps[S.i];const pend=s.stopIdx.filter(j=>j>=S.si);
   if(pend.length){S.si=pend[0]+1}
   const left=S.stops.length-1-S.si;
@@ -495,6 +527,44 @@ function parseOD(txt){const t=normEs(txt);const H=findPlaces(txt);
     if(isO){const od=splitOD(txt);return{o:h.r,d:od.d&&od.d!==od.o?understand(od.d):null}}
     const od=splitOD(txt);return{o:od.o?understand(od.o):null,d:h.r}}
   const od=splitOD(txt);return{o:od.o?understand(od.o):null,d:od.d?understand(od.d):null}}
+const FAVS=[['Puente','puente'],['Sala de control','sala de control'],['MSB-1','cuadro principal 1'],['MSB-2','cuadro principal 2'],['Generad. proa','generador de proa'],['Generad. popa','generador de popa'],['Máquinas proa','camara de maquinas de proa'],['Máquinas popa','camara de maquinas de popa'],['Maq. auxiliar','maquinaria auxiliar'],['Taller eléctrico','taller electrico'],['Taller helicóp.','taller de helicopteros'],['Hangar','hangar'],['CIC','cic'],['Cocina','cocina'],['Control averías','control de averias 1']];
+let PICK='to';let RECENT=[];try{RECENT=JSON.parse(localStorage.getItem('avt-recent')||'[]').filter(r=>r.f&&r.t&&G.nodes[r.f.nid]&&G.nodes[r.t.nid])}catch(e){}
+function saveRecent(){try{const k=S.from.nid+'>'+S.to.nid;RECENT=[{f:{nid:S.from.nid,n:S.from.n,d:S.from.d},t:{nid:S.to.nid,n:S.to.n,d:S.to.d}}].concat(RECENT.filter(r=>r.f.nid+'>'+r.t.nid!==k)).slice(0,5);localStorage.setItem('avt-recent',JSON.stringify(RECENT))}catch(e){}}
+function favsHTML(){if(!S.to&&S.from)PICK='to';return`<div class="small" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">Lugares frecuentes · marcan: <span class="seg"><button id="pkF" aria-pressed="${PICK==='from'}">Estoy en</button><button id="pkT" aria-pressed="${PICK==='to'}">Voy a</button></span></div>
+  <div class="favs">${FAVS.map((f,i)=>`<button class="fav" data-fv="${i}">${f[0]}</button>`).join('')}</div>
+  ${RECENT.length?`<div class="small"><b>Recientes</b></div>${RECENT.map((r,i)=>`<button class="res" data-rc="${i}"><b>${clean(r.f.n)} → ${clean(r.t.n)}</b><small>Tocar para repetir esta ruta</small></button>`).join('')}`:''}`}
+function bindFavs(){const f=document.getElementById('pkF'),tt=document.getElementById('pkT');if(!f)return;f.onclick=()=>{PICK='from';planUI()};tt.onclick=()=>{PICK='to';planUI()};
+  sheet.querySelectorAll('[data-fv]').forEach(b=>b.onclick=()=>{const r=understand(FAVS[+b.dataset.fv][1]);if(!r)return;S[PICK]={nid:r.nid,n:r.n,d:r.d};
+    if(PICK==='to'&&!S.from)PICK='from';else if(PICK==='from'&&!S.to)PICK='to';
+    const n=G.nodes[r.nid];show(n.d,true);const [X,Y]=xy(n.d,n.fr,n.dy);centerOn(X,Y,.5,true);planUI();drawRoute();
+    if(S.from&&S.to){sheet.insertAdjacentHTML('afterbegin',`<div class="say" style="border-color:#1e8e3e">Desde <b>${clean(S.from.n)}</b><br>hasta <b>${clean(S.to.n)}</b></div><button class="btn go bigb" id="go2">▶ Empezar navegación</button>`);document.getElementById('go2').onclick=()=>startNav();sheet.scrollTop=0}else sheet.insertAdjacentHTML('afterbegin',`<div class="warn">Ahora marca ${PICK==='from'?'dónde estás («Estoy en»)':'adónde vas («Voy a»)'}.</div>`)});
+  sheet.querySelectorAll('[data-rc]').forEach(b=>b.onclick=()=>{const r=RECENT[+b.dataset.rc];S.from=r.f;S.to=r.t;startNav()})}
+let SRrun=null;
+function voiceQuick(){const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR)return voiceUI();
+  S.phase='plan';sheet.innerHTML=`<h2 style="text-align:center">Habla ahora</h2><button class="mic on" id="micb" aria-label="Escuchando">🎤</button>
+  <p class="hint" style="text-align:center">Di, por ejemplo: <i>«Estoy en la cocina y quiero ir al cuadro principal uno»</i></p><p id="heard" class="say" style="display:none"></p>
+  <div class="row"><button class="btn" id="vtype" style="flex:1">⌨️ Escribir</button><button class="btn" id="vcancel" style="flex:1">Cancelar</button></div>`;
+  document.getElementById('vcancel').onclick=()=>{try{SRrun&&SRrun.abort()}catch(e){}planUI()};
+  document.getElementById('vtype').onclick=()=>{try{SRrun&&SRrun.abort()}catch(e){}voiceUI()};
+  let got=false;
+  try{const r=new SR();SRrun=r;r.lang='es-ES';r.interimResults=true;r.maxAlternatives=1;
+    r.onresult=e=>{const txt=Array.from(e.results).map(x=>x[0].transcript).join(' ');const h=document.getElementById('heard');if(h){h.style.display='block';h.textContent='«'+txt+'»'}
+      if(e.results[e.results.length-1].isFinal){got=true;confirmVoice(txt)}};
+    r.onerror=ev=>{if(got)return;const h=document.getElementById('heard');if(h){h.style.display='block';h.innerHTML='No he podido escuchar'+(ev.error==='network'?' (necesita internet)':'')+'. Pulsa <b>⌨️ Escribir</b> y usa el micrófono del teclado.'}const m=document.getElementById('micb');if(m)m.classList.remove('on')};
+    r.onend=()=>{const m=document.getElementById('micb');if(m)m.classList.remove('on');if(!got){const h=document.getElementById('heard');if(h&&h.style.display!=='block'){h.style.display='block';h.innerHTML='No te he oído. Toca el micrófono rojo para repetir.'}}};
+    document.getElementById('micb').onclick=()=>{try{r.abort()}catch(e){}voiceQuick()};
+    r.start()}catch(e){voiceUI()}}
+function confirmVoice(txt){const od=parseOD(txt);const o=od.o,d=od.d;
+  if(!d&&!o){sheet.innerHTML=`<div class="say">«${txt}»</div><div class="warn">No te he entendido.</div><div class="row"><button class="btn go bigb" id="vagain">🎤 Repetir</button></div><div class="row"><button class="btn" id="vtype" style="flex:1">⌨️ Escribir</button><button class="btn" id="vcancel" style="flex:1">Cancelar</button></div>`;
+    speak('No te he entendido. Repite, por favor.');document.getElementById('vagain').onclick=voiceQuick;document.getElementById('vtype').onclick=voiceUI;document.getElementById('vcancel').onclick=planUI;return}
+  if(o)S.from={nid:o.nid,n:o.n,d:o.d};if(d)S.to={nid:d.nid,n:d.n,d:d.d};
+  const ready=S.from&&S.to;
+  sheet.innerHTML=`<p class="small">Has dicho: «${txt}»</p><div class="say" style="font-size:1.1rem">Desde: <b>${S.from?clean(S.from.n):'—'}</b><br>Hasta: <b>${S.to?clean(S.to.n):'—'}</b></div>
+  ${ready?'<button class="btn go bigb" id="vyes">✓ Sí, vamos</button>':'<div class="warn">Falta '+(S.from?'el destino':'dónde estás')+'. Márcalo con los botones o vuelve a hablar.</div>'}
+  <div class="row"><button class="btn" id="vagain" style="flex:1">🎤 Repetir</button><button class="btn" id="vplan" style="flex:1">Ajustar a mano</button></div>`;
+  speak(ready?`Desde ${clean(S.from.n)} hasta ${clean(S.to.n)}. ¿Vamos?`:'Me falta un dato.');
+  const y=document.getElementById('vyes');if(y)y.onclick=()=>startNav();
+  document.getElementById('vagain').onclick=voiceQuick;document.getElementById('vplan').onclick=()=>{planUI();drawRoute()}}
 function voiceUI(){S.phase='plan';const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
   sheet.innerHTML=`<h2>🎤 Dímelo en español</h2><p class="hint" style="margin-top:0">Toca la casilla, pulsa el <b>micrófono del teclado</b> y di, por ejemplo: <i>«Estoy en la cocina y quiero ir al cuadro principal uno»</i>.</p>
   <div class="field"><textarea id="vtx" rows="3" style="width:100%;font-size:1rem" placeholder="Estoy en… y quiero ir a…"></textarea></div>
@@ -510,12 +580,12 @@ function voiceUI(){S.phase='plan';const SR=window.SpeechRecognition||window.webk
   document.getElementById('vgo').onclick=run;
   if(SR)document.getElementById('vlisten').onclick=()=>{try{const r=new SR();r.lang='es-ES';r.interimResults=false;r.onresult=e=>{document.getElementById('vtx').value=e.results[0][0].transcript;run()};r.onerror=()=>{document.getElementById('vres').innerHTML='<div class="warn">El reconocimiento de voz no está disponible ahora (puede necesitar internet). Usa el micrófono del teclado.</div>'};r.start()}catch(e){}}}
 
-function orientUI(first){const d=G.nodes[S.steps[S.i].pts[0]].d;if(cur.key!==d)show(d,true);focusMe(true);drawRoute();
-  sheet.innerHTML=`<h2>${first?'Orientación inicial':'¿Hacia dónde miras ahora?'}</h2>
-  <p class="hint">${first?'Ponte de pie de cara a la <b>proa</b> del buque y pulsa «Miro a proa».':'Mira a tu alrededor y dime hacia dónde está mirando tu cara.'} Pistas: los números de cuaderna <b>aumentan hacia proa</b>; con la cara a proa, <b style="color:var(--port)">babor</b> queda a tu izquierda y <b style="color:var(--stbd)">estribor</b> a tu derecha. En el plano, la proa está arriba.</p>
+function orientUI(first){navMode(true);const d=G.nodes[S.steps[S.i].pts[0]].d;if(cur.key!==d)show(d,true);focusMe(true);drawRoute();const tp=document.getElementById('navtop');tp.className='';tp.style.setProperty('--dc',DK[d].color);tp.innerHTML=`<div class="nt-row"><div class="nt-txt"><div class="nt-big">${first?'Oriéntate':'¿Hacia dónde miras?'}</div><div class="nt-sub">${first?'Ponte de cara a la proa':'Al llegar a la nueva cubierta'}</div></div></div><div class="nt-foot"><span class="nt-deck">${DK[d].name}</span></div>`;
+  sheet.innerHTML=`<h2 class="onlyplan">${first?'Orientación inicial':'¿Hacia dónde miras ahora?'}</h2>
+  <p class="hint">${first?'Ponte de pie de cara a la <b>proa</b> del buque y pulsa «Miro a proa».':'Mira a tu alrededor y dime hacia dónde está mirando tu cara.'} Con la cara a proa, <b style="color:var(--port)">babor</b> queda a tu izquierda y <b style="color:var(--stbd)">estribor</b> a tu derecha. En el plano, la proa está arriba.</p>
   <div class="compass"><button class="btn go" data-f="0">Miro a proa</button><button class="btn" data-f="2">Miro a popa</button><button class="btn" data-f="3" style="color:var(--port)">Miro a babor</button><button class="btn" data-f="1" style="color:var(--stbd)">Miro a estribor</button></div>
   ${first?`<div class="toggles"><label><input type="checkbox" id="tv" ${S.voice?'checked':''}> Voz</label><label><input type="checkbox" id="ts" ${S.stepsOn?'checked':''}> Contar pasos</label></div>
-  <div class="warn">Ruta orientativa trazada sobre la Disposición General Rev. H. Respeta puertas estancas cerradas, zonas restringidas y permisos; si algo no coincide, anótalo con «Corregir».</div>`:''}`;
+  <div class="warn">Ruta orientativa trazada sobre el plano de Compartimentos y Accesos Rev. D. Respeta puertas estancas cerradas, zonas restringidas y permisos; si algo no coincide, anótalo con «Corregir».</div>`:''}`;
   sheet.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{S.facing=+b.dataset.f;S.needOrient=false;S.phase='nav';navUI(true)});
   const tv=document.getElementById('tv');if(tv)tv.onchange=()=>{S.voice=tv.checked;try{localStorage.setItem('avt-nav',JSON.stringify({voice:S.voice}))}catch(e){}};
   const ts=document.getElementById('ts');if(ts)ts.onchange=async()=>{const ok=await enableSteps(ts.checked);if(ts.checked&&!ok){ts.checked=false;sheet.insertAdjacentHTML('beforeend','<div class="warn">El contador de pasos no está disponible aquí (el iPhone no da acceso al sensor en esta página). Avanza con «Hecho» en cada punto.</div>')}};
@@ -532,9 +602,10 @@ if('speechSynthesis' in window)speechSynthesis.onvoiceschanged=()=>{};
 show('main');planUI();
 }
 const LS=(k,v)=>{try{if(v===undefined)return localStorage.getItem(k);if(v===null)localStorage.removeItem(k);else localStorage.setItem(k,v)}catch(e){return null}};
-async function getData(){const r=await fetch('data.enc?v='+Date.now(),{cache:'no-store'});return new Uint8Array(await r.arrayBuffer())}
+async function getData(fresh){if(!fresh&&window.caches){try{const c=await caches.match('./data.enc',{ignoreSearch:true});if(c)return new Uint8Array(await c.arrayBuffer())}catch(e){}}
+  const ctl=new AbortController();const to=setTimeout(()=>ctl.abort(),fresh?30000:20000);try{const r=await fetch('data.enc?v='+Date.now(),{cache:'no-store',signal:ctl.signal});return new Uint8Array(await r.arrayBuffer())}finally{clearTimeout(to)}}
 async function purgeOld(){try{if(window.caches){const ks=await caches.keys();await Promise.all(ks.map(k=>caches.delete(k)))}}catch(e){}try{if(navigator.serviceWorker){const rs=await navigator.serviceWorker.getRegistrations();await Promise.all(rs.map(r=>r.unregister()))}}catch(e){}}
-async function unlock(pw,remember,again){const buf=await getData();
+async function unlock(pw,remember,again){const buf=await getData(!!again);
   const salt=buf.slice(0,16),iv=buf.slice(16,28),ct=buf.slice(28);
   const base=await crypto.subtle.importKey('raw',new TextEncoder().encode(pw),'PBKDF2',false,['deriveKey']);
   const key=await crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:250000,hash:'SHA-256'},base,{name:'AES-GCM',length:256},false,['decrypt']);
