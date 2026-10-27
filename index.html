@@ -118,10 +118,14 @@ nav button{position:relative}
 body.navmode .lyr{display:none}
 body.mapmax #sheet{display:none!important}
 body.navmode #zmax{display:none}
+#pocket{position:fixed;inset:0;z-index:99990;background:rgba(0,0,0,.94);color:#fff;display:flex;flex-direction:column;justify-content:space-between;align-items:center;text-align:center;touch-action:none;-webkit-user-select:none;user-select:none;padding:calc(env(safe-area-inset-top,0px) + 14px) 16px calc(env(safe-area-inset-bottom,0px) + 16px)}
+#pocket .pk-top{width:100%;padding:18px 0;border-bottom:1px dashed #555;color:#bbb}#pocket .pk-mid{font-size:1.4rem;font-weight:700}#pocket .pk-mid small{display:block;font-size:.95rem;font-weight:400;color:#ccc;margin-top:8px}
+#pkx{font:inherit;background:#333;color:#fff;border:1px solid #666;border-radius:10px;padding:14px 18px}
+#hfc{font-weight:700}
 </style>
 </head>
 <body>
-<header><h1>AVANTE 2200 · Navegador <small style="font-weight:400;font-size:.7rem">v4.3</small></h1><span id="dname"></span></header>
+<header><h1>AVANTE 2200 · Navegador <small style="font-weight:400;font-size:.7rem">v4.4</small></h1><span id="dname"></span></header>
 <div id="lock" style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:24px;gap:12px;max-width:420px;margin:0 auto;width:100%">
 <img src="icon-192.png" alt="" width="72" height="72" style="border-radius:16px">
 <h2 style="font-size:1.3rem;margin:0">Navegador a bordo</h2>
@@ -251,7 +255,7 @@ function drawRoute(){stage.querySelectorAll('.me,.dst').forEach(e=>e.remove());c
   if(S.to){const n=G.nodes[S.to.nid];if(n&&n.d===cur.key){const [X,Y]=xy(n.d,n.fr,n.dy);pin('dst',X,Y)}}
   const me=mePos();if(me&&me.d===cur.key){const [X,Y]=xy(me.d,me.fr,me.dy);pin('me',X,Y)}}
 function mePos(){if(S.phase==='nav'&&S.steps){const s=S.steps[S.i];const a=G.nodes[s.pts[0]];
-    if(s.kind==='walk'&&S.stepsOn&&s.dist>0){const f=Math.min(1,(S.count-S.base)*0.7/s.dist);return along(s,f)}return{d:a.d,fr:a.fr,dy:a.dy}}
+    if(s.kind==='walk'&&S.stepsOn&&s.dist>0){const f=Math.min(1,(S.count-S.base)*STEPLEN/s.dist);return along(s,f)}return{d:a.d,fr:a.fr,dy:a.dy}}
   if(S.from){const n=G.nodes[S.from.nid];return{d:n.d,fr:n.fr,dy:n.dy}}return null}
 function along(s,f){let L=0;const P=s.pts.map(n=>G.nodes[n]);const seg=[];for(let i=1;i<P.length;i++){const l=Math.hypot((P[i].fr-P[i-1].fr)*.67,(P[i].dy-P[i-1].dy)*.0529);seg.push(l);L+=l}
   let t=f*L;for(let i=1;i<P.length;i++){if(t<=seg[i-1]||i===P.length-1){const k=seg[i-1]?Math.min(1,t/seg[i-1]):1;return{d:P[i].d,fr:P[i-1].fr+(P[i].fr-P[i-1].fr)*k,dy:P[i-1].dy+(P[i].dy-P[i-1].dy)*k}}t-=seg[i-1]}}
@@ -289,10 +293,6 @@ function onMotion(e){const a=e.accelerationIncludingGravity||e.acceleration;if(!
 async function enableSteps(on){if(!on){S.stepsOn=false;window.removeEventListener('devicemotion',onMotion);return true}
   try{if(typeof DeviceMotionEvent!=='undefined'&&typeof DeviceMotionEvent.requestPermission==='function'){const r=await DeviceMotionEvent.requestPermission();if(r!=='granted')throw 0}
     if(typeof DeviceMotionEvent==='undefined')throw 0;window.addEventListener('devicemotion',onMotion);S.stepsOn=true;S.base=S.count;return true}catch(e){S.stepsOn=false;return false}}
-let tickT=0;function tick(){const s=S.steps&&S.steps[S.i];if(!s||s.kind!=='walk')return;const b=document.getElementById('pbar');const need=Math.max(2,s.dist/0.7);const done=S.count-S.base;
-  if(b)b.style.width=Math.min(100,done/need*100)+'%';const c=document.getElementById('pcount');if(c)c.textContent=`${done} de ~${Math.round(need)} pasos`;
-  if(Date.now()-tickT>500){tickT=Date.now();drawRoute()}
-  if(done>=Math.round(need)&&!s._warned){s._warned=1;speak('Deberías estar llegando. Confirma con Hecho.')}}
 // ---------- search
 const ABBR=[[["msb","esb","lc","sb","ups","cuadro","cuadros","switchboard","main switchboard","cuadro principal","cuadro de emergencia","load centre","load center","centro de carga"],"SWITCHBOARDS"],
  [["dg","dgs","gen","generador","generadores","grupo","grupos","diesel generator"],"DIESEL GENERATOR"],
@@ -341,6 +341,7 @@ function planUI(){S.phase='plan';if(document.body.classList.contains('navmode'))
   sheet.innerHTML=`<div class="tabs"><button class="btn pri" id="tabR">Ruta</button><button class="btn" id="tabM">Mis rutas</button><button class="btn" id="tabE">Equipos</button></div>
   <label class="small" style="display:flex;gap:6px;align-items:center;margin:0 0 .4rem"><input type="checkbox" id="obra" ${OBRA?'checked':''}> <b>Modo obra</b> (buque en construcción: instrucciones contando puertas, cruces y escalas)</label>
   <div class="row" style="margin-top:0"><button class="btn pri" id="voice" style="flex:2;min-height:52px;font-size:1.05rem">🎤 Toca y habla</button><button class="btn" id="layb" style="flex:1;min-height:52px">⚡ Capas${Object.keys(LAYON).length?' ('+Object.keys(LAYON).length+')':''}</button></div>
+  ${hfSettingsHTML()}
   ${favsHTML()}
   <p class="small" style="margin:.2rem 0 .5rem">Escaleras: <b>▲▼</b> ambos sentidos · <b style="color:#1e8e3e">▲ solo subida</b> · <b style="color:#d93025">▼ solo bajada</b>. Toca una escala en el plano para cambiarla.</p><div class="field"><label for="qf">Estoy en</label><input id="qf" placeholder="Local, código de la placa (2-93-00-E) o toca el plano" value="${S.from?S.from.n:''}" class="${S.from?'ok':''}"></div>
   <div class="field"><label for="qt">Voy a</label><input id="qt" placeholder="Destino: MSB, cuadro, puente, DG…" value="${S.to?S.to.n:''}" class="${S.to?'ok':''}"></div>
@@ -358,7 +359,7 @@ function planUI(){S.phase='plan';if(document.body.classList.contains('navmode'))
   bind('qf','from');bind('qt','to');
   document.getElementById('tabE').onclick=()=>eqUI();document.getElementById('tabM').onclick=()=>myRoutesUI();
   document.getElementById('obra').onchange=e=>{OBRA=e.target.checked;try{localStorage.setItem('avt-obra',OBRA?'1':'0')}catch(x){}};
-  document.getElementById('voice').onclick=()=>voiceQuick();document.getElementById('layb').onclick=()=>layersUI();bindFavs();
+  document.getElementById('voice').onclick=()=>voiceQuick();document.getElementById('layb').onclick=()=>layersUI();bindHF();bindFavs();
   sheet.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{delete ALIAS[decodeURIComponent(b.dataset.del)];saveAlias();planUI()});
   document.getElementById('start').onclick=startNav;bindNotes()}
 let EQG=null;
@@ -618,13 +619,49 @@ function layersUI(){S.phase='plan';if(document.body.classList.contains('navmode'
   document.getElementById('lnone').onclick=()=>{LAYON={};saveLay();layersUI();drawLayers()};
   document.getElementById('lok').onclick=()=>{planUI();drawRoute();drawLayers();const P=layerItems();if(P.length&&!P.some(p=>p.d===cur.key)){const c={};P.forEach(p=>c[p.d]=(c[p.d]||0)+1);const best=Object.entries(c).sort((a,b)=>b[1]-a[1])[0][0];show(best)}else fitLayers()}}
 
+// ---------- v4.4 Manos libres
+let HF=false,STEPLEN=0.7;try{HF=localStorage.getItem('avt-hf')==='1';STEPLEN=parseFloat(localStorage.getItem('avt-step')||'0.7')||0.7}catch(e){}
+const saveHF=()=>{try{localStorage.setItem('avt-hf',HF?'1':'0');localStorage.setItem('avt-step',String(STEPLEN))}catch(e){}};
+function tone(seq,pan){try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();if(AC.state==='suspended')AC.resume();let t=AC.currentTime+.02;
+  seq.forEach(([f,d,f2])=>{const o=AC.createOscillator(),g=AC.createGain();o.type='sine';o.frequency.setValueAtTime(f,t);if(f2)o.frequency.linearRampToValueAtTime(f2,t+d);
+    let node=g;if(pan!=null&&AC.createStereoPanner){const pn=AC.createStereoPanner();pn.pan.value=pan;g.connect(pn);pn.connect(AC.destination)}else g.connect(AC.destination);
+    o.connect(g);g.gain.setValueAtTime(.32,t);g.gain.exponentialRampToValueAtTime(.001,t+d);o.start(t);o.stop(t+d);t+=d+.06})}catch(e){}}
+// vibración: API estándar o truco de iOS 18 (interruptor nativo)
+let HAP=null;function haptic(){try{if(navigator.vibrate&&navigator.vibrate(60))return}catch(e){}
+  try{if(!HAP){HAP=document.createElement('label');HAP.style.cssText='position:fixed;left:-99px;top:-99px;opacity:0';HAP.innerHTML='<input type="checkbox" switch>';document.body.appendChild(HAP)}HAP.click()}catch(e){}}
+function dirCue(arrow){if(!HF)return;if(arrow==='izquierda')tone([[700,.16],[700,.16]],-1);else if(arrow==='derecha')tone([[700,.16],[700,.16]],1);
+  else if(arrow==='atrás')tone([[500,.12],[500,.12],[500,.12]]);else if(arrow==='sube')tone([[440,.45,880]]);else if(arrow==='baja')tone([[880,.45,440]]);else tone([[760,.1]])}
+let lastTickN=-1;
+function tick(){if(S.phase!=='nav')return;const s=S.steps&&S.steps[S.i];if(!s||s.kind!=='walk')return;const need=Math.max(2,Math.round(s.dist/STEPLEN));const done=S.count-S.base;const rem=need-done;
+  const c=document.getElementById('hfc');if(c)c.textContent=`👣 ${done}/${need}`;
+  if(Date.now()-(S.lastDraw||0)>600){S.lastDraw=Date.now();drawRoute()}
+  if(!HF||done===lastTickN)return;lastTickN=done;
+  if(rem>0&&rem<=6){tone([[500+(6-rem)*90,.07]])}
+  if(rem<=0&&!S.hfArr){S.hfArr=true;tone([[880,.14],[1175,.22]]);haptic();const nx=document.getElementById('nt-next');speak('Deberías estar llegando'+(nx&&nx.dataset.n?': '+nx.dataset.n:'')+'.');
+    if(S.hfAuto!==false){const i0=S.i,si0=S.si;setTimeout(()=>{if(S.phase==='nav'&&S.i===i0&&S.si===si0){const b=document.getElementById('see');if(b)b.click()}},2200)}}
+  if(done>need*1.35+3&&!S.hfWarned){S.hfWarned=true;tone([[300,.3],[220,.45]]);haptic();const m=`Te has pasado unos ${done-need} pasos. Para y mira atrás.`;flash('warn',m);speak(m)}}
+// modo bolsillo
+function pocket(on){let o=document.getElementById('pocket');if(!on){if(o)o.remove();return}
+  if(!o){o=document.createElement('div');o.id='pocket';o.innerHTML=`<div class="pk-top">Mantén pulsado aquí arriba para <b>repetir</b></div><div class="pk-mid">🕶 Modo bolsillo<br><small>Mantén pulsado abajo = <b>La veo ✓</b></small><div id="pk-msg"></div></div><button id="pkx">Mantén pulsado para salir</button>`;document.body.appendChild(o)}
+  let tm=null;const start=(fn,ms)=>e=>{e.preventDefault();clearTimeout(tm);tm=setTimeout(()=>{haptic();fn()},ms)};const stop=()=>clearTimeout(tm);
+  const act=()=>{const b=document.getElementById('see')||document.getElementById('fin')||document.querySelector('[data-f="0"]');tone([[988,.1]]);if(b)b.click()};
+  const rep=()=>{const b=document.getElementById('rep');if(b)b.click();else{const t=document.querySelector('#navtop .nt-say');if(t)speak(t.textContent)}};
+  o.onpointerdown=e=>{if(e.target.id==='pkx')return;const top=e.clientY<window.innerHeight*0.3;start(top?rep:act,top?650:700)(e)};o.onpointerup=stop;o.onpointercancel=stop;o.onpointerleave=stop;
+  const x=document.getElementById('pkx');x.onpointerdown=start(()=>pocket(false),1300);x.onpointerup=stop;x.onpointercancel=stop}
+function hfSettingsHTML(){return`<details style="margin:.2rem 0 .5rem" ${HF?'open':''}><summary><b>🎧 Manos libres</b> ${HF?'(activado)':''}</summary>
+  <label class="small" style="display:flex;gap:6px;align-items:center;margin:.4rem 0"><input type="checkbox" id="hfon" ${HF?'checked':''}> Contar mis pasos, sonidos de giro y avance automático</label>
+  <div class="small">Mi paso: <span class="seg"><button data-sl="0.6" aria-pressed="${STEPLEN===0.6}">Corto</button><button data-sl="0.7" aria-pressed="${STEPLEN===0.7}">Normal</button><button data-sl="0.8" aria-pressed="${STEPLEN===0.8}">Largo</button></span></div>
+  <p class="small">Sonidos con auriculares: pitido en el oído <b>izquierdo</b> = gira a la izquierda; <b>derecho</b> = a la derecha; tono que <b>sube</b> o <b>baja</b> = escala. Pitidos cada vez más agudos = te acercas. Tono grave doble = te has pasado. Usa un solo auricular para oír la obra.</p></details>`}
+function bindHF(){const c=document.getElementById('hfon');if(!c)return;c.onchange=()=>{HF=c.checked;saveHF();if(HF){tone([[700,.12]],-1);setTimeout(()=>tone([[700,.12]],1),350)}};
+  sheet.querySelectorAll('[data-sl]').forEach(b=>b.onclick=()=>{STEPLEN=parseFloat(b.dataset.sl);saveHF();planUI()})}
+
 let WL=null;
 async function wake(on){try{if(on){if('wakeLock' in navigator&&!WL){WL=await navigator.wakeLock.request('screen');WL.addEventListener('release',()=>{WL=null})}}else if(WL){await WL.release();WL=null}}catch(e){}}
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&document.body.classList.contains('navmode'))wake(true)});
 function navMode(on){if(on)document.body.classList.remove('mapmax');document.body.classList.toggle('navmode',!!on);let top=document.getElementById('navtop');
   if(on&&!top){top=document.createElement('div');top.id='navtop';document.body.appendChild(top)}
   if(!on&&top)top.remove();wake(on);setTimeout(()=>{if(cur){clamp();apply()}},50)}
-function exitNav(){clearTimeout(watchT);navMode(false);const b=document.getElementById('alertb');if(b)b.style.display='none'}
+function exitNav(){clearTimeout(watchT);pocket(false);navMode(false);const b=document.getElementById('alertb');if(b)b.style.display='none'}
 function navUI(speakIt,sayOverride){S.phase='nav';navMode(true);const s=S.steps[S.i];const p=phraseX(s,S.facing);
   const d=G.nodes[s.pts[0]].d;if(cur.key!==d)show(d,true);drawRoute();
   const N=S.stops.length;const pend=s.stopIdx.filter(j=>j>=S.si);const nxt=pend.length?S.stops[pend[0]]:null;const left=N-1-S.si;
@@ -634,14 +671,15 @@ function navUI(speakIt,sayOverride){S.phase='nav';navMode(true);const s=S.steps[
   top.innerHTML=`<div class="nt-row">${arrowSVG(p.arrow)}<div class="nt-txt"><div class="nt-big">${arrived?'Has llegado':p.short}</div>
     <div class="nt-sub">${arrived?S.to.n:(nxt&&s.kind==='walk'?`Próxima parada: <b>${nxt.name}</b> · ~${fmtT(nxt.sec||5)}`:p.sub)}</div></div></div>
     <div class="nt-say">${sayOverride||p.say}</div>
-    <div class="nt-foot"><span class="nt-deck">${DK[d].name}</span><span>${arrived?'':`Parada ${Math.min(S.si+1,N)} de ${N} · quedan ${left<0?0:left} · ~${fmtT(remSec())}`}</span></div>`;
+    <div class="nt-foot"><span class="nt-deck">${DK[d].name}</span>${S.stepsOn&&s.kind==='walk'?'<span id="hfc">👣 0</span>':''}<span>${arrived?'':`Parada ${Math.min(S.si+1,N)} de ${N} · quedan ${left<0?0:left} · ~${fmtT(remSec())}`}</span></div><span id="nt-next" data-n="${nxt?nxt.name.replace(/"/g,''):''}" hidden></span>`;
   const btn=arrived?'<button class="btn go nb-main" id="fin">✓ Terminar</button>':s.kind==='lad'?`<button class="btn go nb-main" id="see">Ya estoy en ${ENG.DECKNAME[s.to].replace(/ \(.*\)/,'')} ✓</button>`:nxt?'<button class="btn go nb-main" id="see">La veo ✓</button>':'<button class="btn go nb-main" id="see">Hecho ✓</button>';
   let extra='';if(arrived&&s.db)extra='<div class="warn">El destino está en el doble fondo: acceso por registro desde esta plataforma, solo con permiso de trabajo y procedimiento de espacio confinado.</div>';
-  sheet.innerHTML=`${extra}<div class="nb">${btn}<button class="btn nb-ic" id="rep" aria-label="Repetir instrucción">🔊</button><button class="btn nb-ic" id="more" aria-label="Más opciones" aria-expanded="false">⋯</button></div>
+  sheet.innerHTML=`${extra}<div class="nb">${btn}<button class="btn nb-ic" id="rep" aria-label="Repetir instrucción">🔊</button><button class="btn nb-ic" id="pkb" aria-label="Modo bolsillo">🕶</button><button class="btn nb-ic" id="more" aria-label="Más opciones" aria-expanded="false">⋯</button></div>
   <div id="morebox" hidden><div class="nb2"><button class="btn" id="chk">Comprobar placa</button><button class="btn" id="lost">Estoy perdido</button><button class="btn" id="back" ${S.i?'':'disabled'}>Atrás</button><button class="btn" id="reo">Reorientar</button><button class="btn" id="fix">Corregir</button><button class="btn" id="quit">Salir</button><button class="btn" id="exitb" style="grid-column:1/-1;border-color:#d93025;color:#d93025">🚪 Salida más cercana del buque</button></div><div id="chkbox"></div>
   <p class="small">Destino: ${S.to.n}${S.alt?' · ruta alternativa':''}</p></div>`;
-  focusMe(true);
-  if(speakIt)speak(sayOverride||p.say);
+  focusMe(true);S.base=S.count;S.hfArr=false;S.hfWarned=false;lastTickN=-1;
+  if(speakIt){dirCue(p.arrow);setTimeout(()=>speak(sayOverride||p.say),HF?650:0)}
+  document.getElementById('pkb').onclick=()=>pocket(true);if(arrived)pocket(false);
   if(!arrived)watch(nxt?nxt.sec:s.sec,nxt?nxt.name:'el final de este tramo');
   const see=document.getElementById('see');if(see)see.onclick=()=>advance(p);
   const fin=document.getElementById('fin');if(fin)fin.onclick=()=>{exitNav();S.from={nid:S.to.nid,n:S.to.n,d:S.to.d,ref:S.to.ref};S.to=null;S.steps=null;S.stops=null;planUI();drawRoute()};
@@ -780,7 +818,7 @@ function orientUI(first){navMode(true);const d=G.nodes[S.steps[S.i].pts[0]].d;if
   <div class="compass"><button class="btn go" data-f="0">Miro a proa</button><button class="btn" data-f="2">Miro a popa</button><button class="btn" data-f="3" style="color:var(--port)">Miro a babor</button><button class="btn" data-f="1" style="color:var(--stbd)">Miro a estribor</button></div>
   ${first?`<div class="toggles"><label><input type="checkbox" id="tv" ${S.voice?'checked':''}> Voz</label><label><input type="checkbox" id="ts" ${S.stepsOn?'checked':''}> Contar pasos</label></div>
   <div class="warn">Ruta orientativa trazada sobre el plano de Compartimentos y Accesos Rev. D. Respeta puertas estancas cerradas, zonas restringidas y permisos; si algo no coincide, anótalo con «Corregir».</div>`:''}`;
-  sheet.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{S.facing=+b.dataset.f;S.needOrient=false;S.phase='nav';navUI(true)});
+  sheet.querySelectorAll('[data-f]').forEach(b=>b.onclick=async()=>{if(HF&&!S.stepsOn){await enableSteps(true)}S.facing=+b.dataset.f;S.needOrient=false;S.phase='nav';navUI(true)});
   const tv=document.getElementById('tv');if(tv)tv.onchange=()=>{S.voice=tv.checked;try{localStorage.setItem('avt-nav',JSON.stringify({voice:S.voice}))}catch(e){}};
   const ts=document.getElementById('ts');if(ts)ts.onchange=async()=>{const ok=await enableSteps(ts.checked);if(ts.checked&&!ok){ts.checked=false;sheet.insertAdjacentHTML('beforeend','<div class="warn">El contador de pasos no está disponible aquí (el iPhone no da acceso al sensor en esta página). Avanza con «Hecho» en cada punto.</div>')}};
   if(!first)speak('Al llegar, dime hacia dónde miras.')}
