@@ -110,10 +110,16 @@ body.navmode #alertb{top:calc(env(safe-area-inset-top,0px) + 150px)}
 .lp>span{pointer-events:auto;cursor:pointer;min-width:22px;text-align:center}
 .l-up>span{color:#fff!important;background:#1e8e3e!important;border-color:#1e8e3e!important}
 .l-down>span{color:#fff!important;background:#d93025!important;border-color:#d93025!important}
+.lyr>span{pointer-events:auto;cursor:pointer;width:auto!important;height:auto!important;border-radius:12px!important;background:var(--paper)!important;border:2px solid var(--lc)!important;color:var(--ink);font-size:12px;padding:1px 7px 1px 2px;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,.3);transform:translate(-10px,-50%) scale(var(--inv))!important;transform-origin:left center}
+.lyr>span b{display:inline-block;background:var(--lc);color:#fff;border-radius:9px;padding:0 5px;margin-right:4px;font-size:11px}
+.lc{position:absolute;top:-6px;right:-6px;background:#d93025;color:#fff;font-size:10px;border-radius:9px;padding:0 5px;line-height:16px}
+nav button{position:relative}
+.lyrdot{display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:24px;border-radius:12px;color:#fff;font-size:12px;font-weight:700}
+body.navmode .lyr{display:none}
 </style>
 </head>
 <body>
-<header><h1>AVANTE 2200 · Navegador <small style="font-weight:400;font-size:.7rem">v4.1</small></h1><span id="dname"></span></header>
+<header><h1>AVANTE 2200 · Navegador <small style="font-weight:400;font-size:.7rem">v4.2</small></h1><span id="dname"></span></header>
 <div id="lock" style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:24px;gap:12px;max-width:420px;margin:0 auto;width:100%">
 <img src="icon-192.png" alt="" width="72" height="72" style="border-radius:16px">
 <h2 style="font-size:1.3rem;margin:0">Navegador a bordo</h2>
@@ -226,7 +232,7 @@ function show(k,noFit){cur=DK[k];PLANKEYS.forEach(x=>DK[x].btn.setAttribute('ari
     const e=document.createElement('div');e.className='pin lad lp'+(dir==='up'?' l-up':dir==='down'?' l-down':'');e.dataset.lk=L.k;e.style.left=X+'px';e.style.top=Y+'px';
     e.innerHTML='<span>'+(dir==='up'?'▲':dir==='down'?'▼':(up?'▲':'▼'))+'</span>';e.title='Escala';stage.appendChild(e)}}
   for(const l of (cur.vlad||[])){const [X,Y]=xy(k,l.fr,l.dy);const e=document.createElement('div');e.className='pin lad';e.style.left=X+'px';e.style.top=Y+'px';e.innerHTML='<span>▲▼ V</span>';stage.appendChild(e)}
-  drawRoute();if(!noFit){st.s=fitS();st.x=0;st.y=8;clamp();apply()}}
+  drawRoute();if(typeof drawLayers==='function')drawLayers();if(!noFit){st.s=fitS();st.x=0;st.y=8;clamp();apply()}}
 function pin(cls,X,Y){const e=document.createElement('div');e.className='pin '+cls;e.style.left=X+'px';e.style.top=Y+'px';e.innerHTML='<span></span>';stage.appendChild(e);return e}
 function drawRoute(){stage.querySelectorAll('.me,.dst').forEach(e=>e.remove());const svg=document.getElementById('rsvg');if(!svg)return;svg.innerHTML='';
   DECKS.forEach(d=>d.btn&&d.btn.classList.remove('rt'));
@@ -256,7 +262,7 @@ view.addEventListener('pointermove',e=>{if(!pts.has(e.pointerId))return;const p=
   else if(pts.size===2){const[a,b]=[...pts.values()];const d0=Math.hypot(a.x-b.x,a.y-b.y);p.x=e.clientX;p.y=e.clientY;const[a2,b2]=[...pts.values()];zoomAt(Math.hypot(a2.x-b2.x,a2.y-b2.y)/d0,(a2.x+b2.x)/2-r.left,(a2.y+b2.y)/2-r.top);moved+=20}
   p.x=e.clientX;p.y=e.clientY});
 view.addEventListener('pointerup',e=>{if(!pts.has(e.pointerId))return;pts.delete(e.pointerId);if(moved<8&&pts.size===0){
-  const now=Date.now();const r=R();const hit=document.elementFromPoint(e.clientX,e.clientY);const lp=hit&&hit.closest&&hit.closest('.lp');if(lp&&(S.phase==='plan'||S.phase==='choose')){ladUI(lp.dataset.lk);return}
+  const now=Date.now();const r=R();const hit=document.elementFromPoint(e.clientX,e.clientY);const lyp=hit&&hit.closest&&hit.closest('.lyr');if(lyp&&lyp._p&&(S.phase==='plan'||S.phase==='choose')){layerCard(lyp._p);return}const lp=hit&&hit.closest&&hit.closest('.lp');if(lp&&(S.phase==='plan'||S.phase==='choose')){ladUI(lp.dataset.lk);return}
   if(now-lastTap<300){zoomAt(2,e.clientX-r.left,e.clientY-r.top,true);lastTap=0;return}lastTap=now;
   if(S.phase==='plan'&&!e.target.closest('#zoom')){const X=(e.clientX-r.left-st.x)/st.s,Y=(e.clientY-r.top-st.y)/st.s;setTimeout(()=>{if(lastTap===now)tapPlace(X,Y)},310)}}});
 view.addEventListener('pointercancel',e=>pts.delete(e.pointerId));
@@ -330,7 +336,7 @@ function aliasesHTML(){const k=Object.keys(ALIAS);if(!k.length)return'';return`<
 function planUI(){S.phase='plan';if(document.body.classList.contains('navmode'))exitNav();
   sheet.innerHTML=`<div class="tabs"><button class="btn pri" id="tabR">Ruta</button><button class="btn" id="tabM">Mis rutas</button><button class="btn" id="tabE">Equipos</button></div>
   <label class="small" style="display:flex;gap:6px;align-items:center;margin:0 0 .4rem"><input type="checkbox" id="obra" ${OBRA?'checked':''}> <b>Modo obra</b> (buque en construcción: instrucciones contando puertas, cruces y escalas)</label>
-  <button class="btn pri bigb" id="voice">🎤 Toca y habla</button>
+  <div class="row" style="margin-top:0"><button class="btn pri" id="voice" style="flex:2;min-height:52px;font-size:1.05rem">🎤 Toca y habla</button><button class="btn" id="layb" style="flex:1;min-height:52px">⚡ Capas${Object.keys(LAYON).length?' ('+Object.keys(LAYON).length+')':''}</button></div>
   ${favsHTML()}
   <p class="small" style="margin:.2rem 0 .5rem">Escaleras: <b>▲▼</b> ambos sentidos · <b style="color:#1e8e3e">▲ solo subida</b> · <b style="color:#d93025">▼ solo bajada</b>. Toca una escala en el plano para cambiarla.</p><div class="field"><label for="qf">Estoy en</label><input id="qf" placeholder="Local, código de la placa (2-93-00-E) o toca el plano" value="${S.from?S.from.n:''}" class="${S.from?'ok':''}"></div>
   <div class="field"><label for="qt">Voy a</label><input id="qt" placeholder="Destino: MSB, cuadro, puente, DG…" value="${S.to?S.to.n:''}" class="${S.to?'ok':''}"></div>
@@ -348,7 +354,7 @@ function planUI(){S.phase='plan';if(document.body.classList.contains('navmode'))
   bind('qf','from');bind('qt','to');
   document.getElementById('tabE').onclick=()=>eqUI();document.getElementById('tabM').onclick=()=>myRoutesUI();
   document.getElementById('obra').onchange=e=>{OBRA=e.target.checked;try{localStorage.setItem('avt-obra',OBRA?'1':'0')}catch(x){}};
-  document.getElementById('voice').onclick=()=>voiceQuick();bindFavs();
+  document.getElementById('voice').onclick=()=>voiceQuick();document.getElementById('layb').onclick=()=>layersUI();bindFavs();
   sheet.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{delete ALIAS[decodeURIComponent(b.dataset.del)];saveAlias();planUI()});
   document.getElementById('start').onclick=startNav;bindNotes()}
 let EQG=null;
@@ -554,6 +560,56 @@ function playUI(say){const r=PLAY.r,k=PLAY.i,pt=r.points[k],N=r.points.length;co
   document.getElementById('psee').onclick=()=>{PLAY.i++;if(PLAY.i<N)flash('ok','✓ Vas bien');playUI(true)};
   document.getElementById('prep').onclick=()=>speak(msg);document.getElementById('pback').onclick=()=>{PLAY.i=Math.max(0,PLAY.i-1);playUI(true)};
   document.getElementById('pquit').onclick=()=>{PLAY=null;navMode(false);myRoutesUI()}}
+
+// ---------- v4.2 Capas eléctricas por módulo
+const LAYERS=[
+ {id:'L0',name:'Locales eléctricos clave',color:'#14284b',tag:'⚡',rooms:true},
+ {id:'M3',name:'Módulo 3 · Cuadros principales, LC y tierra',color:'#1a73e8',tag:'M3',groups:['Cuadros principales, Load Centres y conexión a tierra']},
+ {id:'M3d',name:'Módulo 3 · Cuadros secundarios (SSB)',color:'#4285f4',tag:'M3',groups:['Cuadros de distribución secundarios (SSB)']},
+ {id:'M4',name:'Módulo 4 · UPS y rectificadores',color:'#9334e6',tag:'M4',groups:['UPS y rectificadores']},
+ {id:'M5',name:'Módulo 5 · Transformadores y 400 Hz',color:'#e8710a',tag:'M5',groups:['Transformadores y convertidores 400 Hz']},
+ {id:'M6',name:'Módulo 6 · Generación (DG)',color:'#b06000',tag:'M6',groups:['Generación (diésel generadores)']},
+ {id:'M7',name:'Módulo 7 · Válvulas motorizadas (VCS)',color:'#129eaf',tag:'M7',groups:['Válvulas motorizadas (VCS)']},
+ {id:'M8',name:'Módulo 8 · Paradas de emergencia',color:'#d93025',tag:'M8',groups:['Paradas de emergencia']},
+ {id:'M9',name:'Módulo 9 · Limpiaparabrisas y cuadros de taller',color:'#188038',tag:'M9',groups:['Limpiaparabrisas y cuadros de taller']},
+ {id:'M10',name:'Módulo 10 · Alumbrado, señales y HLVA',color:'#f9ab00',tag:'M10',groups:['Alumbrado, señales y HLVA']},
+ {id:'M11',name:'Módulo 11 · Protección catódica',color:'#5f6368',tag:'M11',groups:['Protección catódica y antifouling']},
+ {id:'M12',name:'Módulo 12 · Degaussing y nivel de tanques',color:'#795548',tag:'M12',groups:['Degaussing y nivel de tanques']},
+ {id:'MOT',name:'Arrancadores y motores',color:'#00796b',tag:'MT',groups:['Arrancadores y motores']},
+ {id:'HVAC',name:'Paneles de control HVAC',color:'#607d8b',tag:'HV',groups:['Paneles de control HVAC']}];
+let LAYON={};try{LAYON=JSON.parse(localStorage.getItem('avt-layers')||'{}')}catch(e){}
+const saveLay=()=>{try{localStorage.setItem('avt-layers',JSON.stringify(LAYON))}catch(e){}};
+const KEYROOM=/SWITCHBOARDS? ROOM|DIESEL GENERATOR ROOM|ENGINE ROOM|PLATFORM CONTROL|ELECTRICAL-ELECTRONIC WORKSHOP|ELECTRONIC EQUIPMENT ROOM|DAMAGE CONTROL STATION|NAVIGATION BRIDGE|AUXILIARY MACHINERY|SHORE CONNECTION|FLIGHT CONTROL STATION|HELICOPTER WORKSHOP/;
+function layerItems(){const pts={};const add=(nid,item,lay)=>{const n=G.nodes[nid];if(!n)return;const k=n.d+':'+Math.round(n.fr*2)+':'+Math.round(n.dy/6);(pts[k]=pts[k]||{nid,d:n.d,fr:n.fr,dy:n.dy,items:[],lays:new Set()}).items.push(item);pts[k].lays.add(lay.id)};
+  LAYERS.forEach(L=>{if(!LAYON[L.id])return;
+    if(L.rooms){const seen=new Set();ROOMS.forEach(r=>{if(KEYROOM.test(r.n)&&!seen.has(r.d+r.n+Math.round(r.fr/4))){seen.add(r.d+r.n+Math.round(r.fr/4));add(r.nid,{room:r},L)}})}
+    else EQ.forEach(e=>{if(!L.groups.includes(e.group))return;const nid=eqNid(e);if(nid==null)return;add(nid,{eq:e},L)})});
+  return Object.values(pts)}
+function layColor(p){const L=LAYERS.find(l=>p.lays.has(l.id)&&!l.rooms)||LAYERS.find(l=>p.lays.has(l.id));return L}
+function drawLayers(){stage.querySelectorAll('.lyr').forEach(e=>e.remove());if(!cur)return;const P=layerItems();
+  const cnt={};P.forEach(p=>{cnt[p.d]=(cnt[p.d]||0)+p.items.length});
+  PLANKEYS.forEach(k=>{const b=DK[k].btn;if(!b)return;let s=b.querySelector('.lc');if(!cnt[k]){if(s)s.remove();return}if(!s){s=document.createElement('span');s.className='lc';b.appendChild(s)}s.textContent=cnt[k]});
+  P.filter(p=>p.d===cur.key).forEach(p=>{const L=layColor(p);const [X,Y]=xy(p.d,p.fr,p.dy);const e=document.createElement('div');e.className='pin lyr';e.style.left=X+'px';e.style.top=Y+'px';
+    const eqs=p.items.filter(i=>i.eq);const onlyRoom=!eqs.length;const lbl=onlyRoom?p.items[0].room.n.replace(/\s*\(.*\)/,''):(eqs[0].eq.tag+(eqs.length>1?' +'+(eqs.length-1):''));
+    e.innerHTML=`<span style="--lc:${L.color}"><b>${onlyRoom?'⚡':L.tag}</b> ${lbl}</span>`;e._p=p;stage.appendChild(e)})}
+function layerCard(p){const eqs=p.items.filter(i=>i.eq).map(i=>i.eq);const rooms=p.items.filter(i=>i.room).map(i=>i.room);const n=G.nodes[p.nid];
+  // también todos los equipos de cualquier módulo en ese mismo punto
+  sheet.innerHTML=`<h2>${rooms.length?rooms[0].n:(eqs[0].room||ENG.DECKNAME[p.d])}</h2><p class="hint" style="margin-top:0">${ENG.DECKNAME[p.d]} · ${ENG.sideOf(n.dy)}</p>
+  ${eqs.length?eqs.map((e,i)=>`<button class="res" data-le="${EQ.indexOf(e)}"><b>${e.tag}</b><small>${e.desc||''} · ${e.mod} <span class="badge b-${e.conf}">${e.conf}</span></small></button>`).join(''):'<p class="hint">Local eléctrico clave.</p>'}
+  <div class="row"><button class="btn go" id="lgo">Llévame aquí</button><button class="btn" id="lback">Volver</button></div>`;
+  sheet.querySelectorAll('[data-le]').forEach(b=>b.onclick=()=>eqCard(EQ[+b.dataset.le]));
+  document.getElementById('lgo').onclick=()=>{S.to={nid:p.nid,n:rooms.length?rooms[0].n:(eqs[0].tag+' ('+(eqs[0].room||ENG.DECKNAME[p.d])+')'),d:p.d};if(S.from)startNav();else{PICK='from';planUI();sheet.insertAdjacentHTML('afterbegin','<div class="warn">Ahora indica dónde estás («Entré por» o «Estoy en») y pulsa Empezar.</div>')}};
+  document.getElementById('lback').onclick=()=>{planUI();drawRoute()}}
+function layersUI(){S.phase='plan';if(document.body.classList.contains('navmode'))exitNav();
+  const tot=id=>{const L=LAYERS.find(l=>l.id===id);if(L.rooms)return ROOMS.filter(r=>KEYROOM.test(r.n)).length;return EQ.filter(e=>L.groups.includes(e.group)&&eqNid(e)!=null).length};
+  sheet.innerHTML=`<h2>⚡ Capas eléctricas</h2><p class="hint" style="margin-top:0">Activa los módulos que te interesen: verás sus locales y equipos en cada cubierta. El número en cada botón de cubierta indica cuántos hay.</p>
+  <div class="row"><button class="btn" id="lall">Todos</button><button class="btn" id="lnone">Ninguno</button><button class="btn go" id="lok">Ver en el plano</button></div>
+  ${LAYERS.map(L=>`<label class="res" style="display:flex;gap:10px;align-items:center;cursor:pointer"><input type="checkbox" data-ly="${L.id}" ${LAYON[L.id]?'checked':''} style="width:22px;height:22px">
+   <span class="lyrdot" style="background:${L.color}">${L.rooms?'⚡':L.tag}</span><span style="flex:1"><b>${L.name}</b><small>${tot(L.id)} ${L.rooms?'locales':'equipos con ubicación'}</small></span></label>`).join('')}`;
+  sheet.querySelectorAll('[data-ly]').forEach(c=>c.onchange=()=>{LAYON[c.dataset.ly]=c.checked;if(!c.checked)delete LAYON[c.dataset.ly];saveLay();drawLayers()});
+  document.getElementById('lall').onclick=()=>{LAYERS.forEach(L=>LAYON[L.id]=true);saveLay();layersUI();drawLayers()};
+  document.getElementById('lnone').onclick=()=>{LAYON={};saveLay();layersUI();drawLayers()};
+  document.getElementById('lok').onclick=()=>{planUI();drawRoute();drawLayers();const P=layerItems();if(P.length&&!P.some(p=>p.d===cur.key)){const c={};P.forEach(p=>c[p.d]=(c[p.d]||0)+1);const best=Object.entries(c).sort((a,b)=>b[1]-a[1])[0][0];show(best)}}}
 
 let WL=null;
 async function wake(on){try{if(on){if('wakeLock' in navigator&&!WL){WL=await navigator.wakeLock.request('screen');WL.addEventListener('release',()=>{WL=null})}}else if(WL){await WL.release();WL=null}}catch(e){}}
