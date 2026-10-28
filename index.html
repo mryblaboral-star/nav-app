@@ -122,10 +122,14 @@ body.navmode #zmax{display:none}
 #pocket .pk-top{width:100%;padding:18px 0;border-bottom:1px dashed #555;color:#bbb}#pocket .pk-mid{font-size:1.4rem;font-weight:700}#pocket .pk-mid small{display:block;font-size:.95rem;font-weight:400;color:#ccc;margin-top:8px}
 #pkx{font:inherit;background:#333;color:#fff;border:1px solid #666;border-radius:10px;padding:14px 18px}
 #hfc{font-weight:700}
+.stp>span{width:auto!important;height:auto!important;border-radius:12px!important;background:#fff!important;border:2px solid #d93025!important;color:#202124;font-size:12px;padding:1px 7px 1px 2px;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,.35);transform:translate(-11px,-50%) scale(var(--inv))!important;transform-origin:left center}
+.stp>span b{display:inline-block;min-width:18px;text-align:center;background:#d93025;color:#fff;border-radius:9px;margin-right:4px;font-size:11px}
+.stp.done>span{opacity:.45}.stp.now>span{border-color:#1a73e8!important}.stp.now>span b{background:#1a73e8}.stp.dest>span b{background:#202124}
+#navtop .nt-to{font-size:.85rem;margin-bottom:4px;opacity:.95}
 </style>
 </head>
 <body>
-<header><h1>AVANTE 2200 · Navegador <small style="font-weight:400;font-size:.7rem">v4.4</small></h1><span id="dname"></span></header>
+<header><h1>AVANTE 2200 · Navegador <small style="font-weight:400;font-size:.7rem">v5.0</small></h1><span id="dname"></span></header>
 <div id="lock" style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:24px;gap:12px;max-width:420px;margin:0 auto;width:100%">
 <img src="icon-192.png" alt="" width="72" height="72" style="border-radius:16px">
 <h2 style="font-size:1.3rem;margin:0">Navegador a bordo</h2>
@@ -196,6 +200,7 @@ return{build,path,steps,phrase,DECKNAME,LVL,HEAD,sideOf};})();
 
 ENG.build(G);
 const PLANKEYS=['level03','level02','level01','main','second','toptanks','doublebottom'];
+let SHOWSTOPS=true;try{SHOWSTOPS=localStorage.getItem('avt-stops')!=='0'}catch(e){}
 let LADDIR={};try{LADDIR=JSON.parse(localStorage.getItem('avt-laddir')||'{}')}catch(e){}
 const saveLD=()=>{try{localStorage.setItem('avt-laddir',JSON.stringify(LADDIR))}catch(e){}};
 const LVLN={doublebottom:0,toptanks:1,second:2,main:3,level01:4,level02:5,level03:6};
@@ -253,6 +258,10 @@ function drawRoute(){stage.querySelectorAll('.me,.dst').forEach(e=>e.remove());c
       pl.setAttribute('stroke-width',(i===S.i?14:8)/1);if(S.alt)pl.setAttribute('stroke-dasharray','22 18');pl.setAttribute('opacity',i<S.i?.3:i===S.i?1:.7);svg.appendChild(pl)});
     used.forEach(d=>DK[d]&&DK[d].btn&&DK[d].btn.classList.add('rt'))}
   if(S.to){const n=G.nodes[S.to.nid];if(n&&n.d===cur.key){const [X,Y]=xy(n.d,n.fr,n.dy);pin('dst',X,Y)}}
+  stage.querySelectorAll('.stp').forEach(e=>e.remove());
+  const STP=(S.phase==='choose'&&S.options)?S.options[0].stops:(S.stops||null);
+  if(SHOWSTOPS&&STP){STP.forEach((st_,k)=>{if(!st_.pos||st_.pos.d!==cur.key)return;const [X,Y]=xy(st_.pos.d,st_.pos.fr,st_.pos.dy);const e=document.createElement('div');e.className='pin stp'+(S.phase==='nav'&&k<S.si?' done':'')+(S.phase==='nav'&&k===S.si?' now':'')+(st_.dest?' dest':'');e.style.left=X+'px';e.style.top=Y+'px';
+    e.innerHTML=`<span><b>${k+1}</b> ${st_.name.replace(/^Puerta /,'').replace(' (estanca)',' WT')}</span>`;stage.appendChild(e)})}
   const me=mePos();if(me&&me.d===cur.key){const [X,Y]=xy(me.d,me.fr,me.dy);pin('me',X,Y)}}
 function mePos(){if(S.phase==='nav'&&S.steps){const s=S.steps[S.i];const a=G.nodes[s.pts[0]];
     if(s.kind==='walk'&&S.stepsOn&&s.dist>0){const f=Math.min(1,(S.count-S.base)*STEPLEN/s.dist);return along(s,f)}return{d:a.d,fr:a.fr,dy:a.dy}}
@@ -421,10 +430,11 @@ function safeW(u,v,c,ty){const N=G.nodes;if(ty==='v'&&!ladAllowed(u,v))return In
 function routeMetrics(P){const N=G.nodes;let m=0,lad=0,wt=0;for(let i=1;i<P.length;i++){const a=N[P[i-1].n],b=N[P[i].n];if(P[i].via==='v'){lad++;continue}m+=Math.hypot((b.fr-a.fr)*.67,(b.dy-a.dy)*.0529);if(b.k==='door'&&b.wt)wt++}
   return{m:Math.round(m),lad,wt,sec:Math.round(m/WALK+lad*TLAD+wt*TWT)}}
 function buildStops(steps,destName){const stops=[];steps.forEach((s,i)=>{const lm=s.lm||{};s.stopIdx=[];
-    if(s.kind==='walk'){const names=[];if(lm.door)names.push('Puerta '+lm.door);if(!OBRA){(lm.via||[]).forEach(v=>names.push(v));if(lm.end&&!lm.last)names.push(lm.end)}
-      names.forEach(nm=>{s.stopIdx.push(stops.length);stops.push({name:nm,step:i})})}
-    else if(s.kind==='lad'){s.stopIdx.push(stops.length);stops.push({name:(s.up?'Escala de subida':'Escala de bajada')+(lm.near?' junto a '+lm.near:''),step:i,lad:1})}
-    else if(s.kind==='arrive'){s.stopIdx.push(stops.length);stops.push({name:clean(destName),step:i,dest:1})}});
+    if(s.kind==='walk'){const items=[];s.pts.forEach(n=>{const N_=G.nodes[n];if(N_.k==='door'&&N_.ref&&String(N_.ref).startsWith('door:')){const id=String(N_.ref).slice(5);if(!items.some(x=>x.id===id))items.push({name:'Puerta '+id+(N_.wt?' (estanca)':''),id,pos:N_})}});
+      if(!OBRA){(lm.via||[]).forEach(v=>{const L_=(LMS[G.nodes[s.pts[0]].d]||[]).find(x=>x.n===v);items.push({name:v,pos:L_?{d:G.nodes[s.pts[0]].d,fr:L_.fr,dy:L_.dy}:null})});if(lm.end&&!lm.last)items.push({name:lm.end})}
+      items.forEach(it=>{s.stopIdx.push(stops.length);stops.push({name:it.name,step:i,pos:it.pos||null})})}
+    else if(s.kind==='lad'){s.stopIdx.push(stops.length);stops.push({name:(s.up?'Escala de subida':'Escala de bajada')+(lm.near?' junto a '+lm.near:''),step:i,lad:1,pos:G.nodes[s.pts[0]]})}
+    else if(s.kind==='arrive'){s.stopIdx.push(stops.length);stops.push({name:clean(destName),step:i,dest:1,pos:G.nodes[s.pts[0]]})}});
   steps.forEach(s=>{s.sec=s.kind==='walk'?s.dist/WALK+((s.lm||{}).door&&/estanca/.test(s.lm.door)?TWT:0):s.kind==='lad'?TLAD:0;const k=s.stopIdx.length||1;s.stopIdx.forEach(j=>stops[j].sec=s.sec/k)});
   return stops}
 const fmtT=s=>s<60?`${Math.max(5,Math.round(s/5)*5)} s`:`${Math.round(s/60)} min`;
@@ -460,7 +470,8 @@ function chooseUI(){S.phase='choose';if(document.body.classList.contains('navmod
   ${S.options.map((r,i)=>`<button class="res" data-o="${i}" style="border:2px solid ${i?'#9aa0a6':'#1a73e8'};border-radius:8px;margin-bottom:8px;padding:.6rem">
    <b>${i?'Alternativa':'Recomendada · más corta y segura'}</b><small><svg width="46" height="8" style="vertical-align:middle;margin-right:6px"><line x1="2" y1="4" x2="44" y2="4" stroke="${i?'#9aa0a6':'#1a73e8'}" stroke-width="5" ${i?'stroke-dasharray="7 6"':''} stroke-linecap="round"/></svg>${metHTML(r)}</small></button>`).join('')}
   ${S.options.length<2?'<p class="hint">No hay otra ruta razonable para este trayecto.</p>':''}
-  <div class="row"><button class="btn" id="cback">Volver</button></div>`;
+  <div class="row"><button class="btn" id="cback">Volver</button><button class="btn" id="cstops" aria-pressed="${SHOWSTOPS}">🔢 ${SHOWSTOPS?'Ocultar':'Mostrar'} paradas</button></div>`;
+  document.getElementById('cstops').onclick=()=>{SHOWSTOPS=!SHOWSTOPS;try{localStorage.setItem('avt-stops',SHOWSTOPS?'1':'0')}catch(e){}chooseUI()};
   sheet.querySelectorAll('[data-o]').forEach(b=>b.onclick=()=>{const r=S.options[+b.dataset.o];S.steps=r.steps;S.stops=r.stops;S.alt=r.alt;S.i=0;S.si=0;S.facing=null;S.options=null;S.phase='orient';orientUI(true)});
   document.getElementById('cback').onclick=()=>{S.options=null;S.steps=null;planUI();drawRoute()}}
 // ---- navegación por paradas
@@ -668,18 +679,18 @@ function navUI(speakIt,sayOverride){S.phase='nav';navMode(true);const s=S.steps[
   const top=document.getElementById('navtop');top.style.setProperty('--dc',DK[d].color);
   const arrived=s.kind==='arrive';
   top.className=arrived?'arr':'';
-  top.innerHTML=`<div class="nt-row">${arrowSVG(p.arrow)}<div class="nt-txt"><div class="nt-big">${arrived?'Has llegado':p.short}</div>
+  top.innerHTML=`<div class="nt-to">Vas a: <b>${S.to.n}</b></div><div class="nt-row">${arrowSVG(p.arrow)}<div class="nt-txt"><div class="nt-big">${arrived?'Has llegado':p.short}</div>
     <div class="nt-sub">${arrived?S.to.n:(nxt&&s.kind==='walk'?`Próxima parada: <b>${nxt.name}</b> · ~${fmtT(nxt.sec||5)}`:p.sub)}</div></div></div>
     <div class="nt-say">${sayOverride||p.say}</div>
     <div class="nt-foot"><span class="nt-deck">${DK[d].name}</span>${S.stepsOn&&s.kind==='walk'?'<span id="hfc">👣 0</span>':''}<span>${arrived?'':`Parada ${Math.min(S.si+1,N)} de ${N} · quedan ${left<0?0:left} · ~${fmtT(remSec())}`}</span></div><span id="nt-next" data-n="${nxt?nxt.name.replace(/"/g,''):''}" hidden></span>`;
   const btn=arrived?'<button class="btn go nb-main" id="fin">✓ Terminar</button>':s.kind==='lad'?`<button class="btn go nb-main" id="see">Ya estoy en ${ENG.DECKNAME[s.to].replace(/ \(.*\)/,'')} ✓</button>`:nxt?'<button class="btn go nb-main" id="see">La veo ✓</button>':'<button class="btn go nb-main" id="see">Hecho ✓</button>';
   let extra='';if(arrived&&s.db)extra='<div class="warn">El destino está en el doble fondo: acceso por registro desde esta plataforma, solo con permiso de trabajo y procedimiento de espacio confinado.</div>';
-  sheet.innerHTML=`${extra}<div class="nb">${btn}<button class="btn nb-ic" id="rep" aria-label="Repetir instrucción">🔊</button><button class="btn nb-ic" id="pkb" aria-label="Modo bolsillo">🕶</button><button class="btn nb-ic" id="more" aria-label="Más opciones" aria-expanded="false">⋯</button></div>
+  sheet.innerHTML=`${extra}<div class="nb">${btn}<button class="btn nb-ic" id="rep" aria-label="Repetir instrucción">🔊</button><button class="btn nb-ic" id="stb" aria-label="Mostrar u ocultar paradas" aria-pressed="${SHOWSTOPS}">🔢</button><button class="btn nb-ic" id="pkb" aria-label="Modo bolsillo">🕶</button><button class="btn nb-ic" id="more" aria-label="Más opciones" aria-expanded="false">⋯</button></div>
   <div id="morebox" hidden><div class="nb2"><button class="btn" id="chk">Comprobar placa</button><button class="btn" id="lost">Estoy perdido</button><button class="btn" id="back" ${S.i?'':'disabled'}>Atrás</button><button class="btn" id="reo">Reorientar</button><button class="btn" id="fix">Corregir</button><button class="btn" id="quit">Salir</button><button class="btn" id="exitb" style="grid-column:1/-1;border-color:#d93025;color:#d93025">🚪 Salida más cercana del buque</button></div><div id="chkbox"></div>
   <p class="small">Destino: ${S.to.n}${S.alt?' · ruta alternativa':''}</p></div>`;
   focusMe(true);S.base=S.count;S.hfArr=false;S.hfWarned=false;lastTickN=-1;
   if(speakIt){dirCue(p.arrow);setTimeout(()=>speak(sayOverride||p.say),HF?650:0)}
-  document.getElementById('pkb').onclick=()=>pocket(true);if(arrived)pocket(false);
+  document.getElementById('pkb').onclick=()=>pocket(true);document.getElementById('stb').onclick=()=>{SHOWSTOPS=!SHOWSTOPS;try{localStorage.setItem('avt-stops',SHOWSTOPS?'1':'0')}catch(e){}document.getElementById('stb').setAttribute('aria-pressed',SHOWSTOPS);drawRoute();flash('ok',SHOWSTOPS?'Paradas visibles en el plano':'Paradas ocultas')};if(arrived)pocket(false);
   if(!arrived)watch(nxt?nxt.sec:s.sec,nxt?nxt.name:'el final de este tramo');
   const see=document.getElementById('see');if(see)see.onclick=()=>advance(p);
   const fin=document.getElementById('fin');if(fin)fin.onclick=()=>{exitNav();S.from={nid:S.to.nid,n:S.to.n,d:S.to.d,ref:S.to.ref};S.to=null;S.steps=null;S.stops=null;planUI();drawRoute()};
@@ -812,7 +823,7 @@ function voiceUI(){S.phase='plan';const SR=window.SpeechRecognition||window.webk
   document.getElementById('vgo').onclick=run;
   if(SR)document.getElementById('vlisten').onclick=()=>{try{const r=new SR();r.lang='es-ES';r.interimResults=false;r.onresult=e=>{document.getElementById('vtx').value=e.results[0][0].transcript;run()};r.onerror=()=>{document.getElementById('vres').innerHTML='<div class="warn">El reconocimiento de voz no está disponible ahora (puede necesitar internet). Usa el micrófono del teclado.</div>'};r.start()}catch(e){}}}
 
-function orientUI(first){navMode(true);const d=G.nodes[S.steps[S.i].pts[0]].d;if(cur.key!==d)show(d,true);focusMe(true);drawRoute();const tp=document.getElementById('navtop');tp.className='';tp.style.setProperty('--dc',DK[d].color);tp.innerHTML=`<div class="nt-row"><div class="nt-txt"><div class="nt-big">${first?'Oriéntate':'¿Hacia dónde miras?'}</div><div class="nt-sub">${first?'Ponte de cara a la proa':'Al llegar a la nueva cubierta'}</div></div></div><div class="nt-foot"><span class="nt-deck">${DK[d].name}</span></div>`;
+function orientUI(first){navMode(true);const d=G.nodes[S.steps[S.i].pts[0]].d;if(cur.key!==d)show(d,true);focusMe(true);drawRoute();const tp=document.getElementById('navtop');tp.className='';tp.style.setProperty('--dc',DK[d].color);tp.innerHTML=`<div class=nt-to>Vas a: <b>${S.to.n}</b></div><div class="nt-row"><div class="nt-txt"><div class="nt-big">${first?'Oriéntate':'¿Hacia dónde miras?'}</div><div class="nt-sub">${first?'Ponte de cara a la proa':'Al llegar a la nueva cubierta'}</div></div></div><div class="nt-foot"><span class="nt-deck">${DK[d].name}</span></div>`;
   sheet.innerHTML=`<h2 class="onlyplan">${first?'Orientación inicial':'¿Hacia dónde miras ahora?'}</h2>
   <p class="hint">${first?'Ponte de pie de cara a la <b>proa</b> del buque y pulsa «Miro a proa».':'Mira a tu alrededor y dime hacia dónde está mirando tu cara.'} Con la cara a proa, <b style="color:var(--port)">babor</b> queda a tu izquierda y <b style="color:var(--stbd)">estribor</b> a tu derecha. En el plano, la proa está arriba.</p>
   <div class="compass"><button class="btn go" data-f="0">Miro a proa</button><button class="btn" data-f="2">Miro a popa</button><button class="btn" data-f="3" style="color:var(--port)">Miro a babor</button><button class="btn" data-f="1" style="color:var(--stbd)">Miro a estribor</button></div>
