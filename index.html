@@ -116,7 +116,7 @@ body.navmode #alertb{top:calc(env(safe-area-inset-top,0px) + 150px)}
 nav button{position:relative}
 .lyrdot{display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:24px;border-radius:12px;color:#fff;font-size:12px;font-weight:700}
 body.navmode .lyr{display:none}
-body.mapmax #sheet{display:none!important}
+
 body.navmode #zmax{display:none}
 #pocket{position:fixed;inset:0;z-index:99990;background:rgba(0,0,0,.94);color:#fff;display:flex;flex-direction:column;justify-content:space-between;align-items:center;text-align:center;touch-action:none;-webkit-user-select:none;user-select:none;padding:calc(env(safe-area-inset-top,0px) + 14px) 16px calc(env(safe-area-inset-bottom,0px) + 16px)}
 #pocket .pk-top{width:100%;padding:18px 0;border-bottom:1px dashed #555;color:#bbb}#pocket .pk-mid{font-size:1.4rem;font-weight:700}#pocket .pk-mid small{display:block;font-size:.95rem;font-weight:400;color:#ccc;margin-top:8px}
@@ -126,10 +126,20 @@ body.navmode #zmax{display:none}
 .stp>span b{display:inline-block;min-width:18px;text-align:center;background:#d93025;color:#fff;border-radius:9px;margin-right:4px;font-size:11px}
 .stp.done>span{opacity:.45}.stp.now>span{border-color:#1a73e8!important}.stp.now>span b{background:#1a73e8}.stp.dest>span b{background:#202124}
 #navtop .nt-to{font-size:.85rem;margin-bottom:4px;opacity:.95}
+#panel{position:fixed;left:0;right:0;bottom:0;z-index:40;height:var(--sh,48%);display:flex;flex-direction:column;background:var(--paper);border-top:2px solid var(--ink);border-radius:14px 14px 0 0;box-shadow:0 -4px 16px rgba(0,0,0,.18);transition:height .22s ease}
+#panel.drag{transition:none}
+#grab{flex:none;height:26px;display:flex;align-items:center;justify-content:center;cursor:grab;touch-action:none}
+#grab span{width:46px;height:6px;border-radius:3px;background:#9aa0a6}
+#panel #sheet{flex:1;max-height:none!important;border-top:0!important;overflow-y:auto;padding-top:2px}
+#zoom{bottom:auto!important;top:56px}
+body.navmode #panel{height:auto!important;border-radius:0;border-top:0;box-shadow:none;background:transparent}
+body.navmode #grab{display:none}
+body.mapmax #sheet{display:block!important}
+.blk>span{pointer-events:auto;cursor:pointer;width:30px!important;height:30px!important;border-radius:50%!important;background:#fff!important;border:3px solid #d93025!important;display:flex!important;align-items:center;justify-content:center;font-size:16px;box-shadow:0 1px 4px rgba(0,0,0,.4)}
 </style>
 </head>
 <body>
-<header><h1>AVANTE 2200 · Navegador <small style="font-weight:400;font-size:.7rem">v5.0</small></h1><span id="dname"></span></header>
+<header><h1>AVANTE 2200 · Navegador <small style="font-weight:400;font-size:.7rem">v5.3</small></h1><span id="dname"></span></header>
 <div id="lock" style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:24px;gap:12px;max-width:420px;margin:0 auto;width:100%">
 <img src="icon-192.png" alt="" width="72" height="72" style="border-radius:16px">
 <h2 style="font-size:1.3rem;margin:0">Navegador a bordo</h2>
@@ -226,6 +236,14 @@ let notes=[];try{notes=JSON.parse(localStorage.getItem('avt-notes')||'[]')}catch
 const saveNotes=()=>{try{localStorage.setItem('avt-notes',JSON.stringify(notes))}catch(e){}};
 // ---------- map
 const view=document.getElementById('view'),stage=document.getElementById('stage'),sheet=document.getElementById('sheet'),nav=document.getElementById('decks');
+(function(){const sh=document.getElementById('sheet');if(document.getElementById('panel'))return;const pn=document.createElement('div');pn.id='panel';const gb=document.createElement('div');gb.id='grab';gb.setAttribute('role','button');gb.setAttribute('aria-label','Arrastra para subir o bajar el panel');gb.innerHTML='<span></span>';sh.parentNode.insertBefore(pn,sh);pn.appendChild(gb);pn.appendChild(sh);
+  const H=()=>window.innerHeight;const SNAP=()=>[110,Math.round(H()*0.48),Math.round(H()*0.86)];let cur_=Math.round(H()*0.48);
+  const set=v=>{cur_=Math.max(90,Math.min(H()*0.9,v));document.documentElement.style.setProperty('--sh',cur_+'px')};set(cur_);
+  window.setPanel=k=>{set(SNAP()[k])};
+  let y0=null,h0=0,moved_=0;gb.addEventListener('pointerdown',e=>{gb.setPointerCapture(e.pointerId);y0=e.clientY;h0=cur_;moved_=0;pn.classList.add('drag')});
+  gb.addEventListener('pointermove',e=>{if(y0==null)return;moved_+=Math.abs(e.clientY-y0);set(h0+(y0-e.clientY))});
+  const end=e=>{if(y0==null)return;pn.classList.remove('drag');const S_=SNAP();if(moved_<6){set(cur_<=S_[0]+20?S_[1]:S_[0])}else{set(S_.reduce((a,b)=>Math.abs(b-cur_)<Math.abs(a-cur_)?b:a))}y0=null};
+  gb.addEventListener('pointerup',end);gb.addEventListener('pointercancel',end)})();
 PLANKEYS.forEach(k=>{const b=document.createElement('button');b.style.setProperty('--dc',DK[k].color);b.textContent=SHORT[k];b.title=ENG.DECKNAME[k];b.onclick=()=>show(k);nav.appendChild(b);DK[k].btn=b});
 function xy(d,fr,dy){const M=META;return[(dy*3+M.YC-M.Y0)*M.Z,(M.FR1-fr)*M.K*M.Z]}
 function inv(d,X,Y){const M=META;return[M.FR1-Y/(M.K*M.Z),(X/M.Z-M.YC+M.Y0)/3]}
@@ -262,6 +280,7 @@ function drawRoute(){stage.querySelectorAll('.me,.dst').forEach(e=>e.remove());c
   const STP=(S.phase==='choose'&&S.options)?S.options[0].stops:(S.stops||null);
   if(SHOWSTOPS&&STP){STP.forEach((st_,k)=>{if(!st_.pos||st_.pos.d!==cur.key)return;const [X,Y]=xy(st_.pos.d,st_.pos.fr,st_.pos.dy);const e=document.createElement('div');e.className='pin stp'+(S.phase==='nav'&&k<S.si?' done':'')+(S.phase==='nav'&&k===S.si?' now':'')+(st_.dest?' dest':'');e.style.left=X+'px';e.style.top=Y+'px';
     e.innerHTML=`<span><b>${k+1}</b> ${st_.name.replace(/^Puerta /,'').replace(' (estanca)',' WT')}</span>`;stage.appendChild(e)})}
+  if(typeof drawBlocks==='function')drawBlocks();
   const me=mePos();if(me&&me.d===cur.key){const [X,Y]=xy(me.d,me.fr,me.dy);pin('me',X,Y)}}
 function mePos(){if(S.phase==='nav'&&S.steps){const s=S.steps[S.i];const a=G.nodes[s.pts[0]];
     if(s.kind==='walk'&&S.stepsOn&&s.dist>0){const f=Math.min(1,(S.count-S.base)*STEPLEN/s.dist);return along(s,f)}return{d:a.d,fr:a.fr,dy:a.dy}}
@@ -277,7 +296,9 @@ view.addEventListener('pointermove',e=>{if(!pts.has(e.pointerId))return;const p=
   else if(pts.size===2){const[a,b]=[...pts.values()];const d0=Math.hypot(a.x-b.x,a.y-b.y);p.x=e.clientX;p.y=e.clientY;const[a2,b2]=[...pts.values()];zoomAt(Math.hypot(a2.x-b2.x,a2.y-b2.y)/d0,(a2.x+b2.x)/2-r.left,(a2.y+b2.y)/2-r.top);moved+=20}
   p.x=e.clientX;p.y=e.clientY});
 view.addEventListener('pointerup',e=>{if(!pts.has(e.pointerId))return;pts.delete(e.pointerId);if(moved<8&&pts.size===0){
-  const now=Date.now();const r=R();const hit=document.elementFromPoint(e.clientX,e.clientY);const lyp=hit&&hit.closest&&hit.closest('.lyr');if(lyp&&lyp._p&&(S.phase==='plan'||S.phase==='choose')){layerCard(lyp._p);return}const lp=hit&&hit.closest&&hit.closest('.lp');if(lp&&(S.phase==='plan'||S.phase==='choose')){ladUI(lp.dataset.lk);return}
+  const now=Date.now();const r=R();const hit=document.elementFromPoint(e.clientX,e.clientY);const bk=hit&&hit.closest&&hit.closest('.blk');if(bk&&(S.phase==='plan'||S.phase==='choose')){blockUI(+bk.dataset.nid);return}
+  if(BLOCKMODE&&S.phase==='plan'){const X=(e.clientX-r.left-st.x)/st.s,Y=(e.clientY-r.top-st.y)/st.s;const [fr,dy]=inv(cur.key,X,Y);const nid=nearWalk(cur.key,fr,dy,3);if(nid==null){flash('warn','Toca más cerca de un pasillo o puerta');return}blockUI(nid);return}
+  const lyp=hit&&hit.closest&&hit.closest('.lyr');if(lyp&&lyp._p&&(S.phase==='plan'||S.phase==='choose')){layerCard(lyp._p);return}const lp=hit&&hit.closest&&hit.closest('.lp');if(lp&&(S.phase==='plan'||S.phase==='choose')){ladUI(lp.dataset.lk);return}
   if(now-lastTap<300){zoomAt(2,e.clientX-r.left,e.clientY-r.top,true);lastTap=0;return}lastTap=now;
   if(S.phase==='plan'&&!e.target.closest('#zoom')){const X=(e.clientX-r.left-st.x)/st.s,Y=(e.clientY-r.top-st.y)/st.s;setTimeout(()=>{if(lastTap===now)tapPlace(X,Y)},310)}}});
 view.addEventListener('pointercancel',e=>pts.delete(e.pointerId));
@@ -285,7 +306,7 @@ view.addEventListener('wheel',e=>{e.preventDefault();const r=R();zoomAt(e.deltaY
 document.getElementById('zi').onclick=()=>{const r=R();zoomAt(1.5,r.width/2,r.height/2,true)};
 document.getElementById('zo').onclick=()=>{const r=R();zoomAt(1/1.5,r.width/2,r.height/2,true)};
 document.getElementById('zf').onclick=()=>focusMe(true);
-function toggleMax(on){document.body.classList.toggle('mapmax',on);const b=document.getElementById('zmax');if(b){b.textContent=on?'⤡':'⤢';b.setAttribute('aria-label',on?'Mostrar panel':'Plano grande')}setTimeout(()=>{if(cur){clamp();apply()}},60)}
+function toggleMax(on){document.body.classList.toggle('mapmax',on);if(window.setPanel)setPanel(on?0:1);const b=document.getElementById('zmax');if(b){b.textContent=on?'⤡':'⤢';b.setAttribute('aria-label',on?'Mostrar panel':'Plano grande')}setTimeout(()=>{if(cur){clamp();apply()}},60)}
 document.getElementById('zmax').onclick=()=>toggleMax(!document.body.classList.contains('mapmax'));
 window.addEventListener('resize',()=>{if(cur){clamp();apply()}});
 function tapPlace(X,Y){const [fr,dy]=inv(cur.key,X,Y);let best=null;
@@ -350,6 +371,8 @@ function planUI(){S.phase='plan';if(document.body.classList.contains('navmode'))
   sheet.innerHTML=`<div class="tabs"><button class="btn pri" id="tabR">Ruta</button><button class="btn" id="tabM">Mis rutas</button><button class="btn" id="tabE">Equipos</button></div>
   <label class="small" style="display:flex;gap:6px;align-items:center;margin:0 0 .4rem"><input type="checkbox" id="obra" ${OBRA?'checked':''}> <b>Modo obra</b> (buque en construcción: instrucciones contando puertas, cruces y escalas)</label>
   <div class="row" style="margin-top:0"><button class="btn pri" id="voice" style="flex:2;min-height:52px;font-size:1.05rem">🎤 Toca y habla</button><button class="btn" id="layb" style="flex:1;min-height:52px">⚡ Capas${Object.keys(LAYON).length?' ('+Object.keys(LAYON).length+')':''}</button></div>
+  <div class="row" style="margin:.1rem 0 .4rem"><button class="btn" id="bkm" style="flex:1;${BLOCKMODE?'background:#d93025;color:#fff;border-color:#d93025':''}">${BLOCKMODE?'Toca en el plano el paso cerrado… (cancelar)':'⛔ Marcar paso cerrado'}</button></div>
+  ${blockedListHTML()}
   ${hfSettingsHTML()}
   ${favsHTML()}
   <p class="small" style="margin:.2rem 0 .5rem">Escaleras: <b>▲▼</b> ambos sentidos · <b style="color:#1e8e3e">▲ solo subida</b> · <b style="color:#d93025">▼ solo bajada</b>. Toca una escala en el plano para cambiarla.</p><div class="field"><label for="qf">Estoy en</label><input id="qf" placeholder="Local, código de la placa (2-93-00-E) o toca el plano" value="${S.from?S.from.n:''}" class="${S.from?'ok':''}"></div>
@@ -368,7 +391,7 @@ function planUI(){S.phase='plan';if(document.body.classList.contains('navmode'))
   bind('qf','from');bind('qt','to');
   document.getElementById('tabE').onclick=()=>eqUI();document.getElementById('tabM').onclick=()=>myRoutesUI();
   document.getElementById('obra').onchange=e=>{OBRA=e.target.checked;try{localStorage.setItem('avt-obra',OBRA?'1':'0')}catch(x){}};
-  document.getElementById('voice').onclick=()=>voiceQuick();document.getElementById('layb').onclick=()=>layersUI();bindHF();bindFavs();
+  document.getElementById('voice').onclick=()=>voiceQuick();document.getElementById('layb').onclick=()=>layersUI();document.getElementById('bkm').onclick=()=>{BLOCKMODE=!BLOCKMODE;planUI();if(BLOCKMODE){if(window.setPanel)setPanel(0);flash('warn','Toca en el plano el pasillo o la puerta cerrada')}};sheet.querySelectorAll('[data-reopen]').forEach(b=>b.onclick=()=>{delBlock(b.dataset.reopen);planUI();drawRoute()});bindHF();bindFavs();
   sheet.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{delete ALIAS[decodeURIComponent(b.dataset.del)];saveAlias();planUI()});
   document.getElementById('start').onclick=startNav;bindNotes()}
 let EQG=null;
@@ -426,11 +449,11 @@ function pathW(s,t,wfn){const n=G.nodes.length,d=new Float64Array(n).fill(Infini
     for(const[v,c,ty]of G.adj[u]){const w=wfn(u,v,c,ty);if(d[u]+w<d[v]){d[v]=d[u]+w;p[v]=u;pt[v]=ty}}}
   if(d[t]===Infinity)return null;const P=[];for(let v=t;v!==-1;v=p[v])P.unshift({n:v,via:pt[v]||null});return P}
 const ekey=(a,b)=>a<b?a+'-'+b:b+'-'+a;
-function safeW(u,v,c,ty){const N=G.nodes;if(ty==='v'&&!ladAllowed(u,v))return Infinity;let w=c;if(N[v].k==='door'&&N[v].wt)w+=8;if(ty==='v')w+=4;return w}
+function safeW(u,v,c,ty){const N=G.nodes;if(BLOCK[u]||BLOCK[v])return Infinity;if(ty==='v'&&!ladAllowed(u,v))return Infinity;let w=c;if(N[v].k==='door'&&N[v].wt)w+=8;if(ty==='v')w+=4;return w}
 function routeMetrics(P){const N=G.nodes;let m=0,lad=0,wt=0;for(let i=1;i<P.length;i++){const a=N[P[i-1].n],b=N[P[i].n];if(P[i].via==='v'){lad++;continue}m+=Math.hypot((b.fr-a.fr)*.67,(b.dy-a.dy)*.0529);if(b.k==='door'&&b.wt)wt++}
   return{m:Math.round(m),lad,wt,sec:Math.round(m/WALK+lad*TLAD+wt*TWT)}}
 function buildStops(steps,destName){const stops=[];steps.forEach((s,i)=>{const lm=s.lm||{};s.stopIdx=[];
-    if(s.kind==='walk'){const items=[];s.pts.forEach(n=>{const N_=G.nodes[n];if(N_.k==='door'&&N_.ref&&String(N_.ref).startsWith('door:')){const id=String(N_.ref).slice(5);if(!items.some(x=>x.id===id))items.push({name:'Puerta '+id+(N_.wt?' (estanca)':''),id,pos:N_})}});
+    if(s.kind==='walk'){const items=[];s.pts.forEach((n,ix)=>{if(ix===0&&i>0)return;const N_=G.nodes[n];if(N_.k==='door'&&N_.ref&&String(N_.ref).startsWith('door:')){const id=String(N_.ref).slice(5);if(!items.some(x=>x.id===id))items.push({name:'Puerta '+id+(N_.wt?' (estanca)':''),id,pos:N_})}});
       if(!OBRA){(lm.via||[]).forEach(v=>{const L_=(LMS[G.nodes[s.pts[0]].d]||[]).find(x=>x.n===v);items.push({name:v,pos:L_?{d:G.nodes[s.pts[0]].d,fr:L_.fr,dy:L_.dy}:null})});if(lm.end&&!lm.last)items.push({name:lm.end})}
       items.forEach(it=>{s.stopIdx.push(stops.length);stops.push({name:it.name,step:i,pos:it.pos||null})})}
     else if(s.kind==='lad'){s.stopIdx.push(stops.length);stops.push({name:(s.up?'Escala de subida':'Escala de bajada')+(lm.near?' junto a '+lm.near:''),step:i,lad:1,pos:G.nodes[s.pts[0]]})}
@@ -457,7 +480,7 @@ function ladUI(k){const L=LADS.find(x=>x.k===k);if(!L)return;const lo=G.nodes[L.
   <p class="small">Las rutas respetarán este ajuste. Se guarda solo en este iPhone.</p>`;
   sheet.querySelectorAll('[data-ld]').forEach(b=>b.onclick=()=>{const v=b.dataset.ld;if(v==='both')delete LADDIR[k];else LADDIR[k]=v;saveLD();show(cur.key,true);flash('ok','✓ Escala: '+(v==='both'?'ambos sentidos':v==='up'?'solo subida':'solo bajada'));ladUI(k)});
   document.getElementById('ldback').onclick=()=>{if(S.options)chooseUI();else{planUI();drawRoute()}}}
-function startNav(){saveRecent();const rec=pathW(S.from.nid,S.to.nid,safeW);if(!rec){sheet.insertAdjacentHTML('afterbegin','<div class="warn">No encuentro una ruta entre esos dos puntos.'+(Object.keys(LADDIR).length?' Puede deberse a las escaleras marcadas como de un solo sentido: revísalas tocándolas en el plano.':'')+'</div>');return}
+function startNav(){saveRecent();const rec=pathW(S.from.nid,S.to.nid,safeW);if(!rec){if(document.body.classList.contains('navmode'))exitNav();planUI();drawRoute();sheet.insertAdjacentHTML('afterbegin','<div class="warn">No encuentro una ruta entre esos dos puntos.'+(Object.keys(BLOCK).length?' Hay pasos marcados como cerrados (⛔) que pueden impedirla; en esta zona el plano no tiene otro camino conocido. Pregunta a bordo o usa «Salida más cercana».':'')+(Object.keys(LADDIR).length?' Puede deberse a las escaleras marcadas como de un solo sentido: revísalas tocándolas en el plano.':'')+'</div>');return}
   const used=new Set();for(let i=1;i<rec.length;i++)used.add(ekey(rec[i-1].n,rec[i].n));
   const altP=pathW(S.from.nid,S.to.nid,(u,v,c,ty)=>safeW(u,v,c,ty)*(used.has(ekey(u,v))?5:1));
   const R1=makeRoute(rec,false);S.options=[R1];
@@ -666,6 +689,46 @@ function hfSettingsHTML(){return`<details style="margin:.2rem 0 .5rem" ${HF?'ope
 function bindHF(){const c=document.getElementById('hfon');if(!c)return;c.onchange=()=>{HF=c.checked;saveHF();if(HF){tone([[700,.12]],-1);setTimeout(()=>tone([[700,.12]],1),350)}};
   sheet.querySelectorAll('[data-sl]').forEach(b=>b.onclick=()=>{STEPLEN=parseFloat(b.dataset.sl);saveHF();planUI()})}
 
+// ---------- v5.2 Flecha brújula (giroscopio, referencia relativa)
+let GYRO={on:false,h:null,ref:null,face:0,last:0,aligned:false};
+function devHeading(a,b,g){const d=Math.PI/180,x=(b||0)*d,y=(g||0)*d,z=(a||0)*d;const cX=Math.cos(x),cY=Math.cos(y),cZ=Math.cos(z),sX=Math.sin(x),sY=Math.sin(y),sZ=Math.sin(z);
+  const Vx=-cZ*sY-sZ*sX*cY,Vy=-sZ*sY+cZ*sX*cY;let h=Math.atan(Vx/Vy);if(Vy<0)h+=Math.PI;else if(Vx<0)h+=2*Math.PI;return h*180/Math.PI}
+function onOrient(e){if(e.alpha==null)return;GYRO.raw=devHeading(e.alpha,e.beta,e.gamma);if(GYRO.ref==null){if(GYRO.pend==null)return;GYRO.ref=GYRO.raw;GYRO.face=GYRO.pend;GYRO.pend=null}
+  GYRO.h=((GYRO.raw-GYRO.ref)+GYRO.face*90+720)%360;const t=Date.now();if(t-GYRO.last<90)return;GYRO.last=t;updateCompass()}
+async function enableGyro(){if(GYRO.on)return true;try{if(typeof DeviceOrientationEvent!=='undefined'&&typeof DeviceOrientationEvent.requestPermission==='function'){const r=await DeviceOrientationEvent.requestPermission();if(r!=='granted')return false}
+  if(typeof DeviceOrientationEvent==='undefined')return false;window.addEventListener('deviceorientation',onOrient);GYRO.on=true;return true}catch(e){return false}}
+function gyroAnchor(face){GYRO.face=face;GYRO.aligned=false;if(GYRO.raw!=null){GYRO.ref=GYRO.raw;GYRO.pend=null}else{GYRO.ref=null;GYRO.pend=face}}
+function targetDeg(){const s=S.steps&&S.steps[S.i];if(!s||s.kind!=='walk')return null;const N=G.nodes;const a=N[s.pts[0]],b=N[s.pts[Math.min(1,s.pts.length-1)]];
+  const dx=(b.fr-a.fr)*.67,dy=(b.dy-a.dy)*.0529;if(Math.hypot(dx,dy)<0.2)return s.head*90;return (Math.atan2(dy,dx)*180/Math.PI+360)%360}
+function updateCompass(){if(S.phase!=='nav'||GYRO.h==null)return;const tg=targetDeg();const svg=document.querySelector('#navtop svg');if(tg==null||!svg)return;
+  let diff=((tg-GYRO.h+540)%360)-180;const ad=Math.abs(diff);
+  const g=svg.querySelector('g');const c=svg.querySelector('circle');if(!g||!c)return;
+  g.setAttribute('transform',`rotate(${diff.toFixed(0)} 40 40)`);c.setAttribute('fill',ad<25?'#1e8e3e':ad<70?'#1a73e8':'#e8710a');
+  const big=document.querySelector('#navtop .nt-big');if(big){big.textContent=ad<25?'Sigue recto':ad>135?'Date la vuelta':diff>0?'Gira a la derecha':'Gira a la izquierda'}
+  if(ad<25&&!GYRO.aligned){GYRO.aligned=true;tone([[1046,.08]]);haptic()}else if(ad>40)GYRO.aligned=false}
+
+// ---------- v5.3 Pasos cerrados
+let BLOCK={};try{BLOCK=JSON.parse(localStorage.getItem('avt-block')||'{}')}catch(e){}
+const saveBlock=()=>{try{localStorage.setItem('avt-block',JSON.stringify(BLOCK))}catch(e){}};
+let BLOCKMODE=false;
+function blockLabel(nid){const n=G.nodes[nid];if(n.k==='door'&&n.ref)return 'Puerta '+String(n.ref).replace('door:','');const l=nearLM(n.d,n.fr,n.dy,4);return (l?'Paso junto a '+l:'Paso')+' · '+ENG.DECKNAME[n.d].replace(/ \(.*\)/,'')}
+function addBlock(nid){BLOCK[nid]={t:new Date().toLocaleDateString('es-ES'),n:blockLabel(nid)};saveBlock();drawBlocks()}
+function delBlock(nid){delete BLOCK[nid];saveBlock();drawBlocks()}
+function drawBlocks(){stage.querySelectorAll('.blk').forEach(e=>e.remove());if(!cur)return;Object.keys(BLOCK).forEach(k=>{const n=G.nodes[+k];if(!n||n.d!==cur.key)return;const [X,Y]=xy(n.d,n.fr,n.dy);const e=document.createElement('div');e.className='pin blk';e.dataset.nid=k;e.style.left=X+'px';e.style.top=Y+'px';e.innerHTML='<span>⛔</span>';stage.appendChild(e)})}
+function nearWalk(d,fr,dy,maxm){let b=null;G.nodes.forEach((n,i)=>{if(n.d!==d||(n.k!=='w'&&n.k!=='door'))return;const dd=Math.hypot((n.fr-fr)*.67,(n.dy-dy)*.0529);if(dd<=maxm&&(!b||dd<b[0]))b=[dd,i]});return b?b[1]:null}
+function blockUI(nid){const b=BLOCK[nid];const lab=b?b.n:blockLabel(nid);
+  sheet.innerHTML=`<h2>${b?'⛔ Paso cerrado':'¿Marcar como cerrado?'}</h2><p class="hint" style="margin-top:0"><b>${lab}</b>${b?' · marcado el '+b.t:''}</p>
+  <p class="small">${b?'Las rutas evitan este punto.':'Las rutas dejarán de pasar por aquí hasta que lo reabras.'}</p>
+  <div class="row">${b?'<button class="btn go" id="bk-open">✓ Reabrir paso</button>':'<button class="btn go" id="bk-ok" style="background:#d93025;color:#fff;border-color:#d93025">⛔ Sí, está cerrado</button>'}<button class="btn" id="bk-back">Volver</button></div>`;
+  const ok=document.getElementById('bk-ok');if(ok)ok.onclick=()=>{addBlock(nid);BLOCKMODE=false;flash('ok','⛔ Paso marcado como cerrado');planUI();drawRoute();drawBlocks()};
+  const op=document.getElementById('bk-open');if(op)op.onclick=()=>{delBlock(nid);flash('ok','✓ Paso reabierto');planUI();drawRoute();drawBlocks()};
+  document.getElementById('bk-back').onclick=()=>{BLOCKMODE=false;planUI();drawRoute();drawBlocks()}}
+function blockedListHTML(){const k=Object.keys(BLOCK);if(!k.length)return'';return`<details style="margin:.2rem 0 .5rem"><summary><b>⛔ Pasos cerrados (${k.length})</b></summary>${k.map(id=>`<div class="row" style="align-items:center;justify-content:space-between;margin:.25rem 0"><span class="small"><b>${BLOCK[id].n}</b> · ${BLOCK[id].t}</span><button class="btn" data-reopen="${id}">Reabrir</button></div>`).join('')}</details>`}
+function closedHere(){if(!S.steps)return;const s=S.steps[S.i];const N=G.nodes;
+  let target=null;const pend=s.stopIdx.filter(j=>j>=S.si);if(pend.length){const st_=S.stops[pend[0]];if(st_.pos){const nid=G.nodes.indexOf(st_.pos);if(nid>=0)target=nid}}
+  if(target==null){const mid=s.pts[Math.min(s.pts.length-1,Math.max(1,Math.floor(s.pts.length/2)))];target=mid}
+  addBlock(target);let from=s.pts[0];if(BLOCK[from]){const pv=S.steps[S.i-1];from=pv?pv.pts[0]:from;if(BLOCK[from]){const nb=G.adj[s.pts[0]].map(x=>x[0]).find(v=>!BLOCK[v]);if(nb!=null)from=nb}}exitNav();S.from={nid:from,n:'Mi posición',d:N[from].d};flash('warn','⛔ Paso cerrado marcado. Busco otra ruta…');speak('Paso cerrado. Busco otra ruta.');startNav()}
+
 let WL=null;
 async function wake(on){try{if(on){if('wakeLock' in navigator&&!WL){WL=await navigator.wakeLock.request('screen');WL.addEventListener('release',()=>{WL=null})}}else if(WL){await WL.release();WL=null}}catch(e){}}
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&document.body.classList.contains('navmode'))wake(true)});
@@ -686,9 +749,9 @@ function navUI(speakIt,sayOverride){S.phase='nav';navMode(true);const s=S.steps[
   const btn=arrived?'<button class="btn go nb-main" id="fin">✓ Terminar</button>':s.kind==='lad'?`<button class="btn go nb-main" id="see">Ya estoy en ${ENG.DECKNAME[s.to].replace(/ \(.*\)/,'')} ✓</button>`:nxt?'<button class="btn go nb-main" id="see">La veo ✓</button>':'<button class="btn go nb-main" id="see">Hecho ✓</button>';
   let extra='';if(arrived&&s.db)extra='<div class="warn">El destino está en el doble fondo: acceso por registro desde esta plataforma, solo con permiso de trabajo y procedimiento de espacio confinado.</div>';
   sheet.innerHTML=`${extra}<div class="nb">${btn}<button class="btn nb-ic" id="rep" aria-label="Repetir instrucción">🔊</button><button class="btn nb-ic" id="stb" aria-label="Mostrar u ocultar paradas" aria-pressed="${SHOWSTOPS}">🔢</button><button class="btn nb-ic" id="pkb" aria-label="Modo bolsillo">🕶</button><button class="btn nb-ic" id="more" aria-label="Más opciones" aria-expanded="false">⋯</button></div>
-  <div id="morebox" hidden><div class="nb2"><button class="btn" id="chk">Comprobar placa</button><button class="btn" id="lost">Estoy perdido</button><button class="btn" id="back" ${S.i?'':'disabled'}>Atrás</button><button class="btn" id="reo">Reorientar</button><button class="btn" id="fix">Corregir</button><button class="btn" id="quit">Salir</button><button class="btn" id="exitb" style="grid-column:1/-1;border-color:#d93025;color:#d93025">🚪 Salida más cercana del buque</button></div><div id="chkbox"></div>
+  <div id="morebox" hidden><div class="nb2"><button class="btn" id="chk">Comprobar placa</button><button class="btn" id="lost">Estoy perdido</button><button class="btn" id="back" ${S.i?'':'disabled'}>Atrás</button><button class="btn" id="reo">Reorientar</button><button class="btn" id="fix">Corregir</button><button class="btn" id="quit">Salir</button><button class="btn" id="closedb" style="grid-column:1/-1;background:#d93025;color:#fff;border-color:#d93025">⛔ Está cerrado, recalcula</button><button class="btn" id="exitb" style="grid-column:1/-1;border-color:#d93025;color:#d93025">🚪 Salida más cercana del buque</button></div><div id="chkbox"></div>
   <p class="small">Destino: ${S.to.n}${S.alt?' · ruta alternativa':''}</p></div>`;
-  focusMe(true);S.base=S.count;S.hfArr=false;S.hfWarned=false;lastTickN=-1;
+  focusMe(true);S.base=S.count;S.hfArr=false;S.hfWarned=false;lastTickN=-1;GYRO.aligned=false;setTimeout(updateCompass,50);
   if(speakIt){dirCue(p.arrow);setTimeout(()=>speak(sayOverride||p.say),HF?650:0)}
   document.getElementById('pkb').onclick=()=>pocket(true);document.getElementById('stb').onclick=()=>{SHOWSTOPS=!SHOWSTOPS;try{localStorage.setItem('avt-stops',SHOWSTOPS?'1':'0')}catch(e){}document.getElementById('stb').setAttribute('aria-pressed',SHOWSTOPS);drawRoute();flash('ok',SHOWSTOPS?'Paradas visibles en el plano':'Paradas ocultas')};if(arrived)pocket(false);
   if(!arrived)watch(nxt?nxt.sec:s.sec,nxt?nxt.name:'el final de este tramo');
@@ -700,7 +763,7 @@ function navUI(speakIt,sayOverride){S.phase='nav';navMode(true);const s=S.steps[
   document.getElementById('lost').onclick=()=>{exitNav();S.steps=null;S.stops=null;S.from=null;speechSynthesis&&speechSynthesis.cancel();planUI();drawRoute();
     sheet.insertAdjacentHTML('afterbegin','<div class="warn">Marca dónde estás: toca tu posición en el plano o escribe el código de un local en «Estoy en», y pulsa «Empezar» otra vez. El destino se mantiene.</div>')};
   document.getElementById('quit').onclick=()=>{exitNav();S.steps=null;S.stops=null;speechSynthesis&&speechSynthesis.cancel();planUI();drawRoute()};
-  document.getElementById('reo').onclick=()=>orientUI(false);document.getElementById('exitb').onclick=()=>goExit();
+  document.getElementById('reo').onclick=()=>orientUI(false);document.getElementById('exitb').onclick=()=>goExit();document.getElementById('closedb').onclick=()=>closedHere();
   document.getElementById('chk').onclick=()=>checkUI();
   document.getElementById('fix').onclick=()=>{const tx=prompt('Describe qué no coincide en este tramo (puerta cerrada, escala que no existe, otro camino…):');if(tx){notes.push({t:new Date().toISOString().slice(0,16).replace('T',' '),paso:p.say,de:S.from.n,a:S.to.n,nota:tx});saveNotes();alert('Corrección guardada en este móvil.')}}}
 function advance(p){const s=S.steps[S.i];const pend=s.stopIdx.filter(j=>j>=S.si);
@@ -829,7 +892,7 @@ function orientUI(first){navMode(true);const d=G.nodes[S.steps[S.i].pts[0]].d;if
   <div class="compass"><button class="btn go" data-f="0">Miro a proa</button><button class="btn" data-f="2">Miro a popa</button><button class="btn" data-f="3" style="color:var(--port)">Miro a babor</button><button class="btn" data-f="1" style="color:var(--stbd)">Miro a estribor</button></div>
   ${first?`<div class="toggles"><label><input type="checkbox" id="tv" ${S.voice?'checked':''}> Voz</label><label><input type="checkbox" id="ts" ${S.stepsOn?'checked':''}> Contar pasos</label></div>
   <div class="warn">Ruta orientativa trazada sobre el plano de Compartimentos y Accesos Rev. D. Respeta puertas estancas cerradas, zonas restringidas y permisos; si algo no coincide, anótalo con «Corregir».</div>`:''}`;
-  sheet.querySelectorAll('[data-f]').forEach(b=>b.onclick=async()=>{if(HF&&!S.stepsOn){await enableSteps(true)}S.facing=+b.dataset.f;S.needOrient=false;S.phase='nav';navUI(true)});
+  sheet.querySelectorAll('[data-f]').forEach(b=>b.onclick=async()=>{if(HF&&!S.stepsOn){await enableSteps(true)}await enableGyro();gyroAnchor(+b.dataset.f);S.facing=+b.dataset.f;S.needOrient=false;S.phase='nav';navUI(true)});
   const tv=document.getElementById('tv');if(tv)tv.onchange=()=>{S.voice=tv.checked;try{localStorage.setItem('avt-nav',JSON.stringify({voice:S.voice}))}catch(e){}};
   const ts=document.getElementById('ts');if(ts)ts.onchange=async()=>{const ok=await enableSteps(ts.checked);if(ts.checked&&!ok){ts.checked=false;sheet.insertAdjacentHTML('beforeend','<div class="warn">El contador de pasos no está disponible aquí (el iPhone no da acceso al sensor en esta página). Avanza con «Hecho» en cada punto.</div>')}};
   if(!first)speak('Al llegar, dime hacia dónde miras.')}
